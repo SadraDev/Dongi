@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import '../../constants.dart';
 
 class HomeCatSelector extends StatelessWidget {
-  const HomeCatSelector({Key? key, required this.dark, required this.children}) : super(key: key);
-  final bool dark;
+  const HomeCatSelector({Key? key, required this.children}) : super(key: key);
   final List<Widget> children;
 
   @override
@@ -22,14 +21,8 @@ class HomeCatSelector extends StatelessWidget {
 
 class HomeCatSelectorBubble extends StatelessWidget {
   const HomeCatSelectorBubble(
-      {Key? key,
-      this.dark,
-      required this.catName,
-      required this.priceColor,
-      required this.price,
-      required this.selected})
+      {Key? key, required this.catName, required this.priceColor, required this.price, required this.selected})
       : super(key: key);
-  final bool? dark;
   final bool? selected;
   final String? catName;
   final String? price;
@@ -37,8 +30,9 @@ class HomeCatSelectorBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final dark = MediaQuery.of(context).platformBrightness == Brightness.dark;
     return Card(
-      color: dark!
+      color: dark
           ? selected!
               ? kLighterGrey
               : kGrey

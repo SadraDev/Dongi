@@ -2,16 +2,15 @@ import 'package:flutter/material.dart';
 import '../../constants.dart';
 
 class HomeAppBar extends StatelessWidget {
-  const HomeAppBar(
-      {Key? key, required this.dark, required this.profileImg, required this.username, required this.iconButton})
+  const HomeAppBar({Key? key, required this.profileImg, required this.username, required this.iconButton})
       : super(key: key);
-  final bool dark;
   final String profileImg;
   final String username;
   final void Function() iconButton;
 
   @override
   Widget build(BuildContext context) {
+    final dark = MediaQuery.of(context).platformBrightness == Brightness.dark;
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [

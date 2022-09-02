@@ -21,7 +21,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final dark = MediaQuery.of(context).platformBrightness == Brightness.dark;
     return RefreshIndicator(
       color: kBlack,
       onRefresh: refresh,
@@ -29,43 +28,36 @@ class _HomeScreenState extends State<HomeScreen> {
         padding: EdgeInsets.symmetric(vertical: 48, horizontal: 12).copyWith(bottom: 100),
         children: <Widget>[
           HomeAppBar(
-            dark: dark,
             profileImg: 'profile.jpg',
             username: 'sadra',
             iconButton: () {},
           ),
           HomeCatSelector(
-            dark: dark,
             children: [
               HomeCatSelectorBubble(
                 catName: 'birdan biyanadi',
                 priceColor: kGreen,
                 price: '30000',
                 selected: true,
-                dark: dark,
               ),
               HomeCatSelectorBubble(
                 catName: 'da birajanidi',
                 priceColor: kRed,
                 price: '20000',
                 selected: false,
-                dark: dark,
               ),
             ],
           ),
           HomeCatDetails(
-            dark: dark,
             priceValue: true,
             price: '30000',
             children: [
               HomeCatFriendDetailsBubble(
-                dark: dark,
                 priceValue: true,
                 friendPrice: '30000',
                 friendUsername: 'Mohamad',
               ),
               HomeCatFriendDetailsBubble(
-                dark: dark,
                 priceValue: true,
                 friendPrice: '0',
                 friendUsername: 'AmirHossein',
@@ -73,7 +65,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
           HomePurchaseBubble(
-            dark: dark,
             onTapForCollapse: () => setState(() => visible = !visible),
             motherBuyer: 'Sadra',
             purchaseDescription: 'Los Pollos hermanos',

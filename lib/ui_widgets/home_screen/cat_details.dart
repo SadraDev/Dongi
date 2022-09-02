@@ -5,18 +5,17 @@ import '../../constants.dart';
 class HomeCatDetails extends StatelessWidget {
   const HomeCatDetails({
     Key? key,
-    required this.dark,
     required this.priceValue,
     required this.price,
     required this.children,
   }) : super(key: key);
-  final bool dark;
   final bool priceValue;
   final String price;
   final List<Widget> children;
 
   @override
   Widget build(BuildContext context) {
+    final dark = MediaQuery.of(context).platformBrightness == Brightness.dark;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 24),
       child: Card(
@@ -64,15 +63,15 @@ class HomeCatDetails extends StatelessWidget {
 
 class HomeCatFriendDetailsBubble extends StatelessWidget {
   const HomeCatFriendDetailsBubble(
-      {Key? key, required this.dark, required this.priceValue, required this.friendPrice, required this.friendUsername})
+      {Key? key, required this.priceValue, required this.friendPrice, required this.friendUsername})
       : super(key: key);
-  final bool dark;
   final bool priceValue;
   final String friendPrice;
   final String friendUsername;
 
   @override
   Widget build(BuildContext context) {
+    final dark = MediaQuery.of(context).platformBrightness == Brightness.dark;
     return Card(
       color: dark ? kBlack : kWhite,
       margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 20).copyWith(top: 0),

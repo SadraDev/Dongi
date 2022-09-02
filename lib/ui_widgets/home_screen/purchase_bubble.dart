@@ -5,7 +5,6 @@ import '../../constants.dart';
 class HomePurchaseBubble extends StatelessWidget {
   const HomePurchaseBubble(
       {Key? key,
-      required this.dark,
       required this.onTapForCollapse,
       required this.motherBuyer,
       required this.purchaseDescription,
@@ -13,7 +12,6 @@ class HomePurchaseBubble extends StatelessWidget {
       required this.visible,
       required this.children})
       : super(key: key);
-  final bool dark;
   final bool visible;
   final void Function() onTapForCollapse;
   final List<Widget> children;
@@ -23,6 +21,7 @@ class HomePurchaseBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final dark = MediaQuery.of(context).platformBrightness == Brightness.dark;
     return Padding(
       padding: const EdgeInsets.only(bottom: 12.0),
       child: Card(
