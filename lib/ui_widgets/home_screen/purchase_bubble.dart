@@ -165,7 +165,7 @@ class HomePurchaseBubbleIndividualDetails extends StatelessWidget {
                 individualPayment,
                 style: TextStyle(
                   fontSize: 18,
-                  color: paymentStatus ? kGreen : kRed,
+                  color: paymentStatus ? kGreen : kYellow,
                 ),
               ),
             )
