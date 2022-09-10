@@ -1,10 +1,9 @@
-// ignore_for_file: prefer_const_literals_to_create_immutables, prefer_const_constructors
-
 import 'package:flutter/material.dart';
 import 'package:my_hesab_ketab/constants.dart';
 import 'package:my_hesab_ketab/ui_widgets/home_screen/app_bar.dart';
 import 'package:my_hesab_ketab/ui_widgets/home_screen/cat_details.dart';
 import 'package:my_hesab_ketab/ui_widgets/home_screen/cat_selector.dart';
+import 'package:my_hesab_ketab/ui_widgets/home_screen/notifications.dart';
 import 'package:my_hesab_ketab/ui_widgets/home_screen/purchase_bubble.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -25,14 +24,23 @@ class _HomeScreenState extends State<HomeScreen> {
       color: kBlack,
       onRefresh: refresh,
       child: ListView(
-        padding: EdgeInsets.symmetric(vertical: 48, horizontal: 12).copyWith(bottom: 100),
+        padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 12).copyWith(bottom: 100),
         children: <Widget>[
           HomeAppBar(
             profileImg: 'profile.jpg',
             username: 'sadra',
-            iconButton: () {},
+            notification: true,
+            notificationsBuilder: (context) => HomeNotificationsScreen(
+              refresh: refresh,
+              catRequest: false,
+              requesterUsername: 'AmirHossein',
+              requesterProfileImg: 'profile.jpg',
+              requestedCatName: 'new cat',
+              onAccept: () {},
+              onDeny: () {},
+            ),
           ),
-          HomeCatSelector(
+          const HomeCatSelector(
             children: [
               HomeCatSelectorBubble(
                 catName: 'birdan biyanadi',
@@ -48,7 +56,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ],
           ),
-          HomeCatDetails(
+          const HomeCatDetails(
             priceValue: true,
             price: '30000',
             children: [
