@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-
 import '../../constants.dart';
 
 class ProfileFriendBubble extends StatelessWidget {
@@ -78,22 +77,39 @@ class ProfileFriendBubble extends StatelessWidget {
 }
 
 class ProfileFriendsText extends StatelessWidget {
-  const ProfileFriendsText({Key? key}) : super(key: key);
+  const ProfileFriendsText({Key? key, required this.onAddFriendBuilder}) : super(key: key);
+  final Widget Function(BuildContext) onAddFriendBuilder;
 
   @override
   Widget build(BuildContext context) {
     final dark = MediaQuery.of(context).platformBrightness == Brightness.dark;
     return SizedBox(
       width: MediaQuery.of(context).size.width - 24,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 24),
-        child: Text(
-          'Friends',
-          style: TextStyle(
-            color: dark ? kWhite : kBlack,
-            fontSize: 24,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: <Widget>[
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 24),
+            child: Text(
+              'Friends',
+              style: TextStyle(
+                color: dark ? kWhite : kBlack,
+                fontSize: 24,
+              ),
+            ),
           ),
-        ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 24),
+            child: IconButton(
+              padding: EdgeInsets.zero,
+              icon: const Icon(Icons.person_add_alt_1_rounded),
+              color: kWhite,
+              onPressed: () {
+                Navigator.push(context, MaterialPageRoute(builder: onAddFriendBuilder));
+              },
+            ),
+          ),
+        ],
       ),
     );
   }

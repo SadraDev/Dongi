@@ -2,11 +2,17 @@ import 'package:flutter/material.dart';
 import '../../constants.dart';
 
 class HomeAppBar extends StatelessWidget {
-  const HomeAppBar({Key? key, required this.profileImg, required this.username, required this.iconButton})
-      : super(key: key);
+  const HomeAppBar({
+    Key? key,
+    required this.profileImg,
+    required this.username,
+    required this.notification,
+    required this.notificationsBuilder,
+  }) : super(key: key);
   final String profileImg;
   final String username;
-  final void Function() iconButton;
+  final bool notification;
+  final Widget Function(BuildContext) notificationsBuilder;
 
   @override
   Widget build(BuildContext context) {
@@ -49,12 +55,34 @@ class HomeAppBar extends StatelessWidget {
             ),
           ],
         ),
-        IconButton(
-          onPressed: iconButton,
-          icon: Icon(
-            Icons.notifications,
-            color: !dark ? kBlack : kWhite,
-          ),
+        Stack(
+          alignment: Alignment.topRight,
+          children: [
+            Visibility(
+              visible: notification,
+              child: Container(
+                margin: const EdgeInsets.only(top: 10, right: 10),
+                width: 5,
+                height: 5,
+                decoration: const BoxDecoration(
+                  borderRadius: BorderRadius.all(Radius.circular(25)),
+                  color: Colors.red,
+                ),
+              ),
+            ),
+            IconButton(
+              icon: Icon(
+                Icons.notifications,
+                color: !dark ? kBlack : kWhite,
+              ),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: notificationsBuilder),
+                );
+              },
+            ),
+          ],
         ),
       ],
     );
