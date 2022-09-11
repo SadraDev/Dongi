@@ -4,10 +4,12 @@ import 'package:my_hesab_ketab/screens/flow_screen.dart';
 import 'package:my_hesab_ketab/screens/home_screen.dart';
 import 'package:my_hesab_ketab/screens/login_screen.dart';
 import 'package:my_hesab_ketab/screens/profile_screen.dart';
+import 'package:my_hesab_ketab/screens/splash_screen.dart';
+import 'package:my_hesab_ketab/screens/utilities/shared.dart';
 
-void main() {
-  //WidgetsFlutterBinding.ensureInitialized();
-  //await Shared.init();
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Shared.init();
   runApp(const MyApp());
 }
 
@@ -19,13 +21,14 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: ThemeData(fontFamily: 'poppins'),
-      initialRoute: FlowScreen.id,
+      initialRoute: SplashScreen.id,
       routes: {
         LoginScreen.id: (context) => const LoginScreen(),
         HomeScreen.id: (context) => const HomeScreen(),
         AddScreen.id: (context) => const AddScreen(),
         ProfileScreen.id: (context) => const ProfileScreen(),
         FlowScreen.id: (context) => const FlowScreen(),
+        SplashScreen.id: (context) => const SplashScreen()
       },
     );
   }
