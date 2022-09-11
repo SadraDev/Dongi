@@ -24,10 +24,9 @@ class LoginScaffold extends StatelessWidget {
 }
 
 class LoginTextFields extends StatefulWidget {
-  const LoginTextFields({Key? key, required this.onUsernameSubmitted, required this.onPasswordSubmitted})
-      : super(key: key);
-  final void Function(String)? onUsernameSubmitted;
-  final void Function(String)? onPasswordSubmitted;
+  const LoginTextFields({Key? key, required this.onUsernameChanged, required this.onPasswordChanged}) : super(key: key);
+  final void Function(String)? onUsernameChanged;
+  final void Function(String)? onPasswordChanged;
 
   @override
   State<LoginTextFields> createState() => _LoginTextFieldsState();
@@ -78,7 +77,7 @@ class _LoginTextFieldsState extends State<LoginTextFields> {
               borderRadius: BorderRadius.all(Radius.circular(20.0)),
             ),
           ),
-          onSubmitted: widget.onUsernameSubmitted,
+          onChanged: widget.onUsernameChanged,
         ),
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 12),
@@ -128,7 +127,7 @@ class _LoginTextFieldsState extends State<LoginTextFields> {
                 borderRadius: BorderRadius.all(Radius.circular(20.0)),
               ),
             ),
-            onSubmitted: widget.onPasswordSubmitted,
+            onChanged: widget.onPasswordChanged,
           ),
         ),
       ],
