@@ -26,7 +26,7 @@ class Api {
     Uri url = Uri.parse(kRegisterUrl);
     Response response = await post(
       url,
-      body: {'username': username, 'password': password, 'profile_image': '', 'friends': ''},
+      body: {'username': username, 'password': password, 'profile_image': '', 'friends': '[]'},
     );
 
     if (response.statusCode == 200) {
@@ -63,14 +63,6 @@ class Api {
     return [];
   }
 
-  static Future<bool> sendFriendRequest(String targetId, List<dynamic> request) async {
-    Uri url = Uri.parse(kFriendRequestUrl);
-    Response response = await post(url, body: {'type': 'push', 'target_id': targetId, 'request': jsonEncode(request)});
-
-    if (response.statusCode == 200) return true;
-    return false;
-  }
-
   static Future<List<dynamic>> getFriendRequests(String userId) async {
     Uri url = Uri.parse(kFriendRequestUrl);
     Response response = await post(
@@ -80,5 +72,35 @@ class Api {
 
     if (response.statusCode == 200) return jsonDecode(response.body);
     return [];
+  }
+
+  static Future<bool> sendFriendRequest(String targetId, List<dynamic> request) async {
+    Uri url = Uri.parse(kFriendRequestUrl);
+    Response response = await post(url, body: {'type': 'push', 'target_id': targetId, 'request': jsonEncode(request)});
+
+    if (response.statusCode == 200) return true;
+    return false;
+  }
+
+  static Future<List<dynamic>> getFriends(String targetId) async {
+    Uri url = Uri.parse(kGetFriendsUrl);
+    Response response = await post(
+      url,
+      body: {'type': 'pull', 'target_id': targetId},
+    );
+
+    if (response.statusCode == 200) return jsonDecode(response.body);
+    return [];
+  }
+
+  static Future<bool> setFriends(String targetId, List<dynamic> friends) async {
+    Uri url = Uri.parse(kGetFriendsUrl);
+    Response response = await post(
+      url,
+      body: {'type': 'push', 'target_id': targetId, 'friends': jsonEncode(friends)},
+    );
+
+    if (response.statusCode == 200) return true;
+    return false;
   }
 }
