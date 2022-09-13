@@ -1,26 +1,44 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:my_hesab_ketab/constants.dart';
+import 'package:my_hesab_ketab/screens/utilities/api.dart';
+import 'package:my_hesab_ketab/screens/utilities/shared.dart';
+import 'package:my_hesab_ketab/ui_widgets/home_screen/notification_bubble.dart';
 
-class HomeNotificationsScreen extends StatelessWidget {
-  const HomeNotificationsScreen({
-    Key? key,
-    required this.refresh,
-    required this.requesterProfileImg,
-    required this.catRequest,
-    required this.requestedCatName,
-    required this.onAccept,
-    required this.onDeny,
-    required this.requesterUsername,
-  }) : super(key: key);
-  final Future<void> Function() refresh;
-  final String requesterProfileImg;
-  final String requesterUsername;
-  final bool catRequest;
-  final String requestedCatName;
-  final void Function() onAccept;
-  final void Function() onDeny;
+class HomeNotificationsScreen extends StatefulWidget {
+  const HomeNotificationsScreen({Key? key}) : super(key: key);
+
+  @override
+  State<HomeNotificationsScreen> createState() => _HomeNotificationsScreenState();
+}
+
+class _HomeNotificationsScreenState extends State<HomeNotificationsScreen> {
+  List<Widget>? notifications;
+
+  Future<void> getNotifications() async {
+    notifications = [];
+
+    List<dynamic> friendRequests = [];
+    friendRequests = await Api.getFriendRequests(Shared.getUserId().toString());
+    for (var friendRequest in friendRequests) {
+      HomeNotificationBubble newBubble = HomeNotificationBubble(
+        requesterProfileImg: friendRequest['requester_profile_image'],
+        requesterUsername: friendRequest['requester_username'],
+        requestedCatName: '',
+        catRequest: false,
+        onAccept: () {},
+        onDeny: () {},
+      );
+      notifications!.add(newBubble);
+    }
+    setState(() {});
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    getNotifications();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -46,80 +64,10 @@ class HomeNotificationsScreen extends StatelessWidget {
       ),
       body: RefreshIndicator(
         color: kBlack,
-        onRefresh: refresh,
+        onRefresh: getNotifications,
         child: ListView(
           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12).copyWith(bottom: 100),
-          children: <Widget>[
-            Card(
-              color: dark ? kGrey : kLighterGrey,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: <Widget>[
-                  Row(
-                    children: <Widget>[
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 12),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: Image.asset(
-                            'assets/images/$requesterProfileImg',
-                            height: 80,
-                            width: 80,
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                      ),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.baseline,
-                        textBaseline: TextBaseline.alphabetic,
-                        children: <Widget>[
-                          Text(
-                            requesterUsername,
-                            style: TextStyle(
-                              color: dark ? kWhite : kBlack,
-                              fontSize: 16,
-                            ),
-                          ),
-                          const SizedBox(height: 15),
-                          catRequest
-                              ? Text(
-                                  'Cat req : \n $requestedCatName',
-                                  style: TextStyle(
-                                    color: dark ? kWhite : kBlack,
-                                    fontSize: 14,
-                                  ),
-                                )
-                              : Text(
-                                  'Friend request',
-                                  style: TextStyle(
-                                    color: dark ? kLighterGrey : kGrey,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.only(right: 8.0),
-                    child: Row(
-                      children: <Widget>[
-                        IconButton(
-                          onPressed: onAccept,
-                          icon: const Icon(FontAwesomeIcons.xmark, color: kRed),
-                        ),
-                        IconButton(
-                          onPressed: onDeny,
-                          icon: const Icon(FontAwesomeIcons.check, color: kGreen),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+          children: notifications!,
         ),
       ),
     );
