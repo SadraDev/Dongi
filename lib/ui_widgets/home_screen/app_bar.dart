@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../constants.dart';
+import 'package:my_hesab_ketab/constants.dart';
 
 class HomeAppBar extends StatelessWidget {
   const HomeAppBar({
@@ -7,12 +7,12 @@ class HomeAppBar extends StatelessWidget {
     required this.profileImg,
     required this.username,
     required this.notification,
-    required this.notificationsBuilder,
+    required this.notificationScreenBuilder,
   }) : super(key: key);
   final String profileImg;
   final String username;
   final bool notification;
-  final Widget Function(BuildContext) notificationsBuilder;
+  final Widget Function(BuildContext) notificationScreenBuilder;
 
   @override
   Widget build(BuildContext context) {
@@ -37,7 +37,7 @@ class HomeAppBar extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
                   Text(
-                    'Hello, $username',
+                    'Hello, ${username}',
                     style: TextStyle(
                       fontSize: 24,
                       color: !dark ? kBlack : kWhite,
@@ -78,7 +78,7 @@ class HomeAppBar extends StatelessWidget {
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: notificationsBuilder),
+                  MaterialPageRoute(builder: notificationScreenBuilder),
                 );
               },
             ),
