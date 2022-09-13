@@ -18,6 +18,7 @@ class _LoginScreenState extends State<LoginScreen> {
   bool registerLoading = false;
   String? _username;
   String? _password;
+  String? _userId;
 
   login() => Navigator.popAndPushNamed(context, FlowScreen.id);
 
@@ -35,10 +36,12 @@ class _LoginScreenState extends State<LoginScreen> {
           onLogin: () async {
             setState(() => loginLoading = true);
             String logged = await Api.login(_username!, _password!);
+            _userId = await Api.getId(_username!);
             setState(() => loginLoading = false);
             if (logged == 'true') {
               Shared.setUserName(_username!);
               Shared.setUserPassword(_password!);
+              Shared.setUserId(_userId!);
               login();
             } else {
               showDialog(
@@ -55,10 +58,12 @@ class _LoginScreenState extends State<LoginScreen> {
           onRegister: () async {
             setState(() => registerLoading = true);
             String logged = await Api.register(_username!, _password!);
+            _userId = await Api.getId(_username!);
             setState(() => registerLoading = false);
             if (logged == 'true') {
               Shared.setUserName(_username!);
               Shared.setUserPassword(_password!);
+              Shared.setUserId(_userId!);
               login();
             } else {
               showDialog(
