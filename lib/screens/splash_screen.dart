@@ -17,7 +17,7 @@ class SplashScreen extends StatefulWidget {
 class _SplashScreenState extends State<SplashScreen> {
   String? loggedIn;
   final String _username = Shared.getUserName() ?? '';
-  final String _password = Shared.getUserPassword() ?? '';
+  final String _password = Shared.getUserPassword() ?? 'password';
 
   checkLogin() async {
     String? loggedIn = await Api.login(_username, _password);
@@ -67,32 +67,27 @@ class _SplashScreenState extends State<SplashScreen> {
               child: Image.asset('assets/images/logop.png', height: 150, width: 150),
             ),
             GestureDetector(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: const <Widget>[
-                  Text(
-                    'Developed by :       ',
-                    style: TextStyle(
-                      color: kGrey,
-                      fontSize: 18,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: const <Widget>[
+                    Text(
+                      'Developed by :       ',
+                      style: TextStyle(
+                        color: kGrey,
+                        fontSize: 18,
+                      ),
                     ),
-                  ),
-                  Text(
-                    'SadraDev',
-                    style: TextStyle(
-                      color: kWhite,
-                      fontSize: 18,
+                    Text(
+                      'SadraDev',
+                      style: TextStyle(
+                        color: kWhite,
+                        fontSize: 18,
+                      ),
                     ),
-                  ),
-                ],
-              ),
-              onTap: () async {
-                if (await canLaunch(Uri.encodeFull('https://sadra-dev.web.app/'))) {
-                  await launch(Uri.encodeFull('https://sadra-dev.web.app/'));
-                }
-              },
-            )
+                  ],
+                ),
+                onTap: () async => await launch(Uri.encodeFull('https://sadra-dev.web.app/')))
           ],
         ),
       ),
