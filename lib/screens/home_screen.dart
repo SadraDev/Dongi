@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:my_hesab_ketab/constants.dart';
+import 'package:my_hesab_ketab/screens/utilities/api.dart';
+import 'package:my_hesab_ketab/screens/utilities/shared.dart';
 import 'package:my_hesab_ketab/ui_widgets/home_screen/app_bar.dart';
 import 'package:my_hesab_ketab/ui_widgets/home_screen/cat_details.dart';
 import 'package:my_hesab_ketab/ui_widgets/home_screen/cat_selector.dart';
@@ -15,30 +17,36 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   bool visible = true;
+  bool notification = false;
+  String? _username;
+  String? _userId;
 
-  Future<void> refresh() async {}
+  Future<void> getNotifications() async {
+    List<dynamic> notification = await Api.getFriendRequests(_userId!);
+    if (notification.isNotEmpty) setState(() => this.notification = true);
+  }
+
+  @override
+  void initState() {
+    _username = Shared.getUserName();
+    _userId = Shared.getUserId();
+    getNotifications();
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
     return RefreshIndicator(
       color: kBlack,
-      onRefresh: refresh,
+      onRefresh: getNotifications,
       child: ListView(
         padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 12).copyWith(bottom: 100),
         children: <Widget>[
           HomeAppBar(
             profileImg: 'profile.jpg',
-            username: 'sadra',
-            notification: true,
-            notificationsBuilder: (context) => HomeNotificationsScreen(
-              refresh: refresh,
-              catRequest: false,
-              requesterUsername: 'AmirHossein',
-              requesterProfileImg: 'profile.jpg',
-              requestedCatName: 'new cat',
-              onAccept: () {},
-              onDeny: () {},
-            ),
+            username: _username!,
+            notification: notification,
+            notificationScreenBuilder: (context) => const HomeNotificationsScreen(),
           ),
           const HomeCatSelector(
             children: [
