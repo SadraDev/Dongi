@@ -78,11 +78,11 @@ class HomeNotificationBubble extends StatelessWidget {
             child: Row(
               children: <Widget>[
                 IconButton(
-                  onPressed: onAccept,
+                  onPressed: onDeny,
                   icon: const Icon(FontAwesomeIcons.xmark, color: kRed),
                 ),
                 IconButton(
-                  onPressed: onDeny,
+                  onPressed: onAccept,
                   icon: const Icon(FontAwesomeIcons.check, color: kGreen),
                 ),
               ],
