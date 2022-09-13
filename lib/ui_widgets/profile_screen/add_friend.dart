@@ -2,6 +2,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:my_hesab_ketab/constants.dart';
+import 'package:my_hesab_ketab/screens/utilities/api.dart';
+import 'package:my_hesab_ketab/screens/utilities/shared.dart';
 
 class ProfileAddFriendScreen extends StatefulWidget {
   const ProfileAddFriendScreen({Key? key}) : super(key: key);
@@ -11,6 +13,52 @@ class ProfileAddFriendScreen extends StatefulWidget {
 }
 
 class _ProfileAddFriendScreenState extends State<ProfileAddFriendScreen> {
+  List<Widget> searchChildren = [];
+
+  Future<void> search(username) async {
+    List<dynamic> searchResult = await Api.search(username);
+    searchChildren = [];
+    for (var result in searchResult) {
+      ProfileAddFriendBubble newBubble = ProfileAddFriendBubble(
+        username: result['username'],
+        profileImg: result['profile_image'],
+        onAdd: () async {
+          bool? sendIt = true;
+          List<dynamic> friendRequests = await Api.getFriendRequests(result['id'].toString());
+          for (var friendRequest in friendRequests) {
+            if (friendRequest['requester_id'] == Shared.getUserId()) sendIt = false;
+          }
+          if (sendIt!) {
+            friendRequests.add(newRequest(result['profile_image']));
+            await Api.sendFriendRequest(result['id'].toString(), friendRequests);
+            showDialog(
+              context: context,
+              builder: (context) => const AlertDialog(content: Text('request sent', textAlign: TextAlign.center)),
+            );
+          }
+          if (!sendIt) {
+            showDialog(
+              context: context,
+              builder: (context) =>
+                  const AlertDialog(content: Text('request already sent', textAlign: TextAlign.center)),
+            );
+          }
+        },
+      );
+      searchChildren.add(newBubble);
+    }
+    setState(() {});
+  }
+
+  Map<String, dynamic> newRequest(String profileImage) {
+    return {
+      "requester_id": Shared.getUserId(),
+      "requester_username": Shared.getUserName(),
+      "requester_profile_image": profileImage,
+      "status": "unapproved"
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     final dark = MediaQuery.of(context).platformBrightness == Brightness.dark;
@@ -34,8 +82,7 @@ class _ProfileAddFriendScreenState extends State<ProfileAddFriendScreen> {
               borderSide: const BorderSide(color: kDarkModeBrown),
             ),
           ),
-          onChanged: (value) {},
-          onSubmitted: (value) {},
+          onChanged: (value) async => await search(value),
         ),
         leading: IconButton(
           onPressed: () => Navigator.pop(context),
@@ -47,7 +94,7 @@ class _ProfileAddFriendScreenState extends State<ProfileAddFriendScreen> {
       ),
       body: ListView(
         padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 24),
-        children: [],
+        children: searchChildren,
       ),
     );
   }
