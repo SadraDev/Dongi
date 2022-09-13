@@ -33,7 +33,7 @@ class LoginTextFields extends StatefulWidget {
 }
 
 class _LoginTextFieldsState extends State<LoginTextFields> {
-  bool obscure = false;
+  bool obscure = true;
 
   @override
   Widget build(BuildContext context) {
