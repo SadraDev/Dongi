@@ -40,4 +40,45 @@ class Api {
     }
     return 'false';
   }
+
+  static Future<String> getId(String username) async {
+    Uri url = Uri.parse(kGetUserIdUrl);
+    Response response = await post(url, body: {'username': username});
+
+    if (response.statusCode == 200) return jsonDecode(response.body).toString();
+    return '0';
+  }
+
+  static Future<List<dynamic>> search(String username) async {
+    Uri url = Uri.parse(kSearchUrl);
+    Response response = await post(
+      url,
+      body: {'username': '$username%'},
+    );
+
+    if (response.statusCode == 200) {
+      var data = jsonDecode(response.body);
+      return data;
+    }
+    return [];
+  }
+
+  static Future<bool> sendFriendRequest(String targetId, List<dynamic> request) async {
+    Uri url = Uri.parse(kFriendRequestUrl);
+    Response response = await post(url, body: {'type': 'push', 'target_id': targetId, 'request': jsonEncode(request)});
+
+    if (response.statusCode == 200) return true;
+    return false;
+  }
+
+  static Future<List<dynamic>> getFriendRequests(String userId) async {
+    Uri url = Uri.parse(kFriendRequestUrl);
+    Response response = await post(
+      url,
+      body: {'type': 'pull', 'user_id': userId},
+    );
+
+    if (response.statusCode == 200) return jsonDecode(response.body);
+    return [];
+  }
 }
