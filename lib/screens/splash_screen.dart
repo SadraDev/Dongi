@@ -24,6 +24,7 @@ class _SplashScreenState extends State<SplashScreen> {
 
     if (loggedIn == 'true') this.loggedIn = 'true';
     if (loggedIn == 'username required') this.loggedIn = 'false';
+    if (loggedIn == 'user does not exist') this.loggedIn = 'false';
     if (loggedIn == 'NETWORK_ERROR') this.loggedIn = 'network error';
     login();
   }
