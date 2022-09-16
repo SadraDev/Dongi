@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:my_hesab_ketab/constants.dart';
 
 class LoginScaffold extends StatelessWidget {
   const LoginScaffold({Key? key, required this.children}) : super(key: key);
@@ -57,12 +58,14 @@ class _LoginTextFieldsState extends State<LoginTextFields> {
           ),
         ),
         TextField(
+          maxLength: 11,
           cursorColor: dark ? const Color(0xffb5b072) : const Color(0xff514E1F),
           style: TextStyle(
             color: dark ? const Color(0xffb5b072) : const Color(0xff514E1F),
             fontSize: 18,
           ),
           decoration: InputDecoration(
+            counterStyle: TextStyle(color: dark ? kDarkModeBrown : kLightModeBrown),
             contentPadding: const EdgeInsets.symmetric(horizontal: 40, vertical: 30),
             hintText: 'username',
             filled: true,
