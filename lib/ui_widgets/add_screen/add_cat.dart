@@ -2,12 +2,18 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:my_hesab_ketab/constants.dart';
 
-class AddAddCategoryScreen extends StatelessWidget {
-  const AddAddCategoryScreen({Key? key, required this.friendSelectorChildren, required this.onGroupNameChanged})
+class AddAddCategoryScreen extends StatefulWidget {
+  const AddAddCategoryScreen({Key? key, required this.children, this.onFABPressed, this.onGroupNameChanged})
       : super(key: key);
-  final List<Widget> friendSelectorChildren;
-  final void Function(String) onGroupNameChanged;
+  final List<AddFriendBubble> children;
+  final void Function()? onFABPressed;
+  final void Function(String)? onGroupNameChanged;
 
+  @override
+  State<AddAddCategoryScreen> createState() => _AddAddCategoryScreenState();
+}
+
+class _AddAddCategoryScreenState extends State<AddAddCategoryScreen> {
   @override
   Widget build(BuildContext context) {
     final dark = MediaQuery.of(context).platformBrightness == Brightness.dark;
@@ -23,6 +29,12 @@ class AddAddCategoryScreen extends StatelessWidget {
           Navigator.push(context, MaterialPageRoute(
             builder: (context) {
               return Scaffold(
+                floatingActionButton: FloatingActionButton(
+                  onPressed: widget.onFABPressed!,
+                  backgroundColor: kDarkModeBrown,
+                  child: const Icon(Icons.add),
+                ),
+                floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
                 resizeToAvoidBottomInset: false,
                 backgroundColor: dark ? kBlack : kWhite,
                 appBar: AppBar(
@@ -68,7 +80,7 @@ class AddAddCategoryScreen extends StatelessWidget {
                             borderSide: BorderSide(color: kDarkModeBrown),
                           ),
                         ),
-                        onChanged: onGroupNameChanged,
+                        onChanged: widget.onGroupNameChanged,
                       ),
                     ),
                     Padding(
@@ -82,7 +94,9 @@ class AddAddCategoryScreen extends StatelessWidget {
                       ),
                     ),
                     Divider(thickness: 1, color: dark ? kWhite : kBlack),
-                    Wrap(children: friendSelectorChildren)
+                    Wrap(
+                      children: widget.children,
+                    ),
                   ],
                 ),
               );
@@ -95,42 +109,60 @@ class AddAddCategoryScreen extends StatelessWidget {
 }
 
 class AddFriendBubble extends StatelessWidget {
-  const AddFriendBubble({Key? key, required this.onTap, required this.cardSelected, required this.friendName})
+  AddFriendBubble(
+      {Key? key, required this.onSelected, required this.selected, required this.friendName, required this.friendPP})
       : super(key: key);
-  final void Function()? onTap;
+  final void Function(bool)? onSelected;
   final String friendName;
-  final bool cardSelected;
+  final String friendPP;
+  bool selected;
 
   @override
   Widget build(BuildContext context) {
     final dark = MediaQuery.of(context).platformBrightness == Brightness.dark;
-    return Stack(
-      children: [
-        Card(
-          clipBehavior: Clip.antiAliasWithSaveLayer,
-          color: dark
-              ? cardSelected
-                  ? kDarkModeBrown
-                  : kWhite
-              : !cardSelected
-                  ? kBlack
-                  : kLightModeBrown,
-          child: InkWell(
-            onTap: onTap,
-            child: Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Text(
-                friendName,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 20,
-                  color: dark ? kBlack : kWhite,
-                ),
-              ),
-            ),
-          ),
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: FilterChip(
+        selected: selected,
+        labelPadding: const EdgeInsets.all(8.0),
+        onSelected: onSelected,
+        selectedColor: kDarkModeBrown,
+        avatar: CircleAvatar(backgroundImage: AssetImage('assets/images/$friendPP')),
+        label: Text(
+          friendName,
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 20, color: dark ? kBlack : kWhite),
         ),
-      ],
+      ),
     );
+
+    // return Stack(
+    //   children: [
+    //     Card(
+    //       clipBehavior: Clip.antiAliasWithSaveLayer,
+    //       color: dark
+    //           ? cardSelected
+    //               ? kDarkModeBrown
+    //               : kWhite
+    //           : !cardSelected
+    //               ? kBlack
+    //               : kLightModeBrown,
+    //       child: InkWell(
+    //         onTap: onTap,
+    //         child: Padding(
+    //           padding: const EdgeInsets.all(8.0),
+    //           child: Text(
+    //             friendName,
+    //             textAlign: TextAlign.center,
+    //             style: TextStyle(
+    //               fontSize: 20,
+    //               color: dark ? kBlack : kWhite,
+    //             ),
+    //           ),
+    //         ),
+    //       ),
+    //     ),
+    //   ],
+    // );
   }
 }

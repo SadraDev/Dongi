@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:my_hesab_ketab/screens/utilities/api.dart';
+import 'package:my_hesab_ketab/screens/utilities/shared.dart';
 import 'package:my_hesab_ketab/ui_widgets/add_screen/add_button.dart';
+import 'package:my_hesab_ketab/ui_widgets/add_screen/add_cat.dart';
 import 'package:my_hesab_ketab/ui_widgets/add_screen/cat_selector.dart';
 import 'package:my_hesab_ketab/ui_widgets/add_screen/description_textfield.dart';
 import 'package:my_hesab_ketab/ui_widgets/add_screen/dumb_cal.dart';
@@ -18,6 +21,38 @@ class AddScreen extends StatefulWidget {
 class _AddScreenState extends State<AddScreen> {
   bool? tripleZero = true;
   bool? smartCal = true;
+  List<AddFriendBubble> friends = [];
+
+  Future<void> getFriends() async {
+    List<dynamic> friends = await Api.getFriends(Shared.getUserId()!);
+    for (int i = 0; i < friends.length; i++) {
+      bool selected = false;
+      String friendUsername = friends[i]['friend_username'];
+      String friendPP = friends[i]['friend_profile_image'];
+      AddFriendBubble friendBubble = AddFriendBubble(
+        friendName: friendUsername,
+        friendPP: friendPP,
+        selected: selected,
+        onSelected: (value) {
+          if (this.friends[i].selected) {
+            this.friends[i].selected = false;
+          } else if (this.friends[i].selected == false) {
+            this.friends[i].selected = true;
+          }
+          print(this.friends[i].selected);
+        },
+      );
+
+      this.friends.add(friendBubble);
+    }
+    setState(() {});
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    getFriends();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -36,10 +71,13 @@ class _AddScreenState extends State<AddScreen> {
                   onTap: () {},
                   selected: true,
                 ),
-                AddCatSelectorBubble(
-                  catName: 'da birajanidi',
-                  onTap: () {},
-                  selected: false,
+                AddAddCategoryScreen(
+                  children: friends,
+                  onFABPressed: () {
+                    print('${friends[0].selected} ${friends[0].friendName}');
+                    print('${friends[1].selected} ${friends[1].friendName}');
+                  },
+                  onGroupNameChanged: (value) {},
                 ),
               ],
             ),
