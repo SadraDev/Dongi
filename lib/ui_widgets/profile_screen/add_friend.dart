@@ -19,33 +19,37 @@ class _ProfileAddFriendScreenState extends State<ProfileAddFriendScreen> {
     List<dynamic> searchResult = await Api.search(username);
     searchChildren = [];
     for (var result in searchResult) {
-      ProfileAddFriendBubble newBubble = ProfileAddFriendBubble(
-        username: result['username'],
-        profileImg: result['profile_image'],
-        onAdd: () async {
-          bool? sendIt = true;
-          List<dynamic> friendRequests = await Api.getFriendRequests(result['id'].toString());
-          for (var friendRequest in friendRequests) {
-            if (friendRequest['requester_id'] == Shared.getUserId()) sendIt = false;
-          }
-          if (sendIt!) {
-            friendRequests.add(newRequest(result['profile_image']));
-            await Api.sendFriendRequest(result['id'].toString(), friendRequests);
-            showDialog(
-              context: context,
-              builder: (context) => const AlertDialog(content: Text('request sent', textAlign: TextAlign.center)),
-            );
-          }
-          if (!sendIt) {
-            showDialog(
-              context: context,
-              builder: (context) =>
-                  const AlertDialog(content: Text('request already sent', textAlign: TextAlign.center)),
-            );
-          }
-        },
-      );
-      searchChildren.add(newBubble);
+      if (result['id'].toString() != Shared.getUserId()) {
+        ProfileAddFriendBubble newBubble = ProfileAddFriendBubble(
+          username: result['username'],
+          profileImg: result['profile_image'],
+          onAdd: () async {
+            bool? sendIt = true;
+            List<dynamic> friendRequests = await Api.getFriendRequests(result['id'].toString());
+            for (var friendRequest in friendRequests) {
+              if (friendRequest['requester_id'] == Shared.getUserId()) {
+                sendIt = false;
+              }
+            }
+            if (sendIt!) {
+              friendRequests.add(newRequest(result['profile_image']));
+              await Api.sendFriendRequest(result['id'].toString(), friendRequests);
+              showDialog(
+                context: context,
+                builder: (context) => const AlertDialog(content: Text('request sent', textAlign: TextAlign.center)),
+              );
+            }
+            if (!sendIt) {
+              showDialog(
+                context: context,
+                builder: (context) =>
+                    const AlertDialog(content: Text('request already sent', textAlign: TextAlign.center)),
+              );
+            }
+          },
+        );
+        searchChildren.add(newBubble);
+      }
     }
     setState(() {});
   }
