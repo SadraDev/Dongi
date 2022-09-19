@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:my_hesab_ketab/screens/utilities/api.dart';
-import 'package:my_hesab_ketab/screens/utilities/shared.dart';
 import 'package:my_hesab_ketab/ui_widgets/add_screen/add_button.dart';
 import 'package:my_hesab_ketab/ui_widgets/add_screen/add_cat.dart';
 import 'package:my_hesab_ketab/ui_widgets/add_screen/cat_selector.dart';
@@ -21,38 +19,6 @@ class AddScreen extends StatefulWidget {
 class _AddScreenState extends State<AddScreen> {
   bool? tripleZero = true;
   bool? smartCal = true;
-  List<AddFriendBubble> friends = [];
-
-  Future<void> getFriends() async {
-    List<dynamic> friends = await Api.getFriends(Shared.getUserId()!);
-    for (int i = 0; i < friends.length; i++) {
-      bool selected = false;
-      String friendUsername = friends[i]['friend_username'];
-      String friendPP = friends[i]['friend_profile_image'];
-      AddFriendBubble friendBubble = AddFriendBubble(
-        friendName: friendUsername,
-        friendPP: friendPP,
-        selected: selected,
-        onSelected: (value) {
-          if (this.friends[i].selected) {
-            this.friends[i].selected = false;
-          } else if (this.friends[i].selected == false) {
-            this.friends[i].selected = true;
-          }
-          print(this.friends[i].selected);
-        },
-      );
-
-      this.friends.add(friendBubble);
-    }
-    setState(() {});
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    getFriends();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -71,14 +37,17 @@ class _AddScreenState extends State<AddScreen> {
                   onTap: () {},
                   selected: true,
                 ),
-                AddAddCategoryScreen(
-                  children: friends,
-                  onFABPressed: () {
-                    print('${friends[0].selected} ${friends[0].friendName}');
-                    print('${friends[1].selected} ${friends[1].friendName}');
-                  },
-                  onGroupNameChanged: (value) {},
-                ),
+                Card(
+                  margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 20).copyWith(bottom: 10),
+                  color: kWhite,
+                  child: InkWell(
+                    child: const Padding(
+                      padding: EdgeInsets.all(8.0),
+                      child: Text('add new group'),
+                    ),
+                    onTap: () => Navigator.pushNamed(context, AddAddCategoryScreen.id),
+                  ),
+                )
               ],
             ),
             const Divider(color: kWhite, indent: 12, endIndent: 12),
