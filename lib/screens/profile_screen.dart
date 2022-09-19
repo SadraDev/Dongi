@@ -1,9 +1,11 @@
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
-import 'package:my_hesab_ketab/ui_widgets/profile_screen/Friends.dart';
-import 'package:my_hesab_ketab/ui_widgets/profile_screen/add_friend.dart';
+import 'package:my_hesab_ketab/constants.dart';
 import 'package:my_hesab_ketab/ui_widgets/profile_screen/balance_info.dart';
 import 'package:my_hesab_ketab/ui_widgets/profile_screen/profile_info.dart';
+import 'package:my_hesab_ketab/ui_widgets/profile_screen/add_friend.dart';
+import 'package:my_hesab_ketab/ui_widgets/profile_screen/Friends.dart';
+import 'package:my_hesab_ketab/screens/utilities/shared.dart';
+import 'package:my_hesab_ketab/screens/utilities/api.dart';
+import 'package:flutter/material.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -13,44 +15,49 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
+  List<Widget>? children = [];
+
+  Future<void> getFriends() async {
+    children = [
+      const ProfileImage(profileImg: 'profile.jpg'),
+      ProfileUsername(username: Shared.getUserName()!),
+      const ProfileBalanceInformation(
+        payedAmount: '410,000',
+        earnedAmount: '665,000',
+        pendingBalance: '255,000',
+        pendingBalanceValue: false,
+      ),
+      ProfileFriendsText(
+        onAddFriendBuilder: (context) => const ProfileAddFriendScreen(),
+      ),
+    ];
+
+    List<dynamic> friends = await Api.getFriends(Shared.getUserId()!);
+
+    for (var friend in friends) {
+      ProfileFriendBubble newFriend = ProfileFriendBubble(
+        friendUsername: friend['friend_username'],
+        friendProfileImg: friend['friend_profile_image'],
+        amount: friend['friend_balance'],
+        amountValue: friend['friend_balance_type'],
+        addedDate: friend['friend_add_date'],
+      );
+      children!.add(newFriend);
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    getFriends();
+  }
+
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.only(bottom: 100),
-      children: <Widget>[
-        const ProfileImage(profileImg: 'profile.jpg'),
-        const ProfileUsername(username: 'SadraDev'),
-        const ProfileBalanceInformation(
-          payedAmount: '410,000',
-          earnedAmount: '665,000',
-          pendingBalance: '255,000',
-          pendingBalanceValue: false,
-        ),
-        ProfileFriendsText(
-          onAddFriendBuilder: (context) => const ProfileAddFriendScreen(),
-        ),
-        const ProfileFriendBubble(
-          friendProfileImg: 'profile.jpg',
-          friendUsername: 'Mohamad',
-          addedDate: '2022 06 16',
-          amount: '60000',
-          amountValue: false,
-        ),
-        const ProfileFriendBubble(
-          friendProfileImg: 'profile.jpg',
-          friendUsername: 'Amir',
-          addedDate: '2022 06 16',
-          amount: '70000',
-          amountValue: false,
-        ),
-        const ProfileFriendBubble(
-          friendProfileImg: 'profile.jpg',
-          friendUsername: 'AmirHossein',
-          addedDate: '2022 06 16',
-          amount: '125000',
-          amountValue: false,
-        ),
-      ],
+    return RefreshIndicator(
+      onRefresh: getFriends,
+      color: kBlack,
+      child: ListView(padding: const EdgeInsets.only(bottom: 100), children: children!),
     );
   }
 }
