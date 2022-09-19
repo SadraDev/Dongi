@@ -7,12 +7,12 @@ class HomeAppBar extends StatelessWidget {
     required this.profileImg,
     required this.username,
     required this.notification,
-    required this.notificationScreenBuilder,
+    required this.onPressed,
   }) : super(key: key);
   final String profileImg;
   final String username;
   final bool notification;
-  final Widget Function(BuildContext) notificationScreenBuilder;
+  final void Function() onPressed;
 
   @override
   Widget build(BuildContext context) {
@@ -37,7 +37,7 @@ class HomeAppBar extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
                   Text(
-                    'Hello, ${username}',
+                    'Hello, $username',
                     style: TextStyle(
                       fontSize: 24,
                       color: !dark ? kBlack : kWhite,
@@ -71,17 +71,9 @@ class HomeAppBar extends StatelessWidget {
               ),
             ),
             IconButton(
-              icon: Icon(
-                Icons.notifications,
-                color: !dark ? kBlack : kWhite,
-              ),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: notificationScreenBuilder),
-                );
-              },
-            ),
+              icon: Icon(Icons.notifications, color: !dark ? kBlack : kWhite),
+              onPressed: onPressed,
+            )
           ],
         ),
       ],

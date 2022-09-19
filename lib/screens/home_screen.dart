@@ -22,8 +22,16 @@ class _HomeScreenState extends State<HomeScreen> {
   String? _userId;
 
   Future<void> getNotifications() async {
-    List<dynamic> notification = await Api.getFriendRequests(_userId!);
-    if (notification.isNotEmpty) setState(() => this.notification = true);
+    notification = false;
+    List<dynamic> notifications = [];
+    notifications = await Api.getFriendRequests(_userId!);
+    for (var notification in notifications) {
+      if (notification['status'] != 'approved') {
+        if (notifications.isNotEmpty) setState(() => this.notification = true);
+      }
+    }
+    //add new Api and do exactly like above
+    setState(() {});
   }
 
   @override
@@ -46,7 +54,7 @@ class _HomeScreenState extends State<HomeScreen> {
             profileImg: 'profile.jpg',
             username: _username!,
             notification: notification,
-            notificationScreenBuilder: (context) => const HomeNotificationsScreen(),
+            onPressed: () => Navigator.pushNamed(context, HomeNotificationsScreen.id),
           ),
           const HomeCatSelector(
             children: [
