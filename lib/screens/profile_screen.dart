@@ -16,34 +16,11 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   List<Widget>? children = [];
+  List<dynamic> friends = [];
 
   Future<void> getFriends() async {
-    children = [
-      const ProfileImage(profileImg: 'profile.jpg'),
-      ProfileUsername(username: Shared.getUserName()!),
-      const ProfileBalanceInformation(
-        payedAmount: '410,000',
-        earnedAmount: '665,000',
-        pendingBalance: '255,000',
-        pendingBalanceValue: false,
-      ),
-      ProfileFriendsText(
-        onAddFriendBuilder: (context) => const ProfileAddFriendScreen(),
-      ),
-    ];
-
-    List<dynamic> friends = await Api.getFriends(Shared.getUserId()!);
-
-    for (var friend in friends) {
-      ProfileFriendBubble newFriend = ProfileFriendBubble(
-        friendUsername: friend['friend_username'],
-        friendProfileImg: friend['friend_profile_image'],
-        amount: friend['friend_balance'],
-        amountValue: friend['friend_balance_type'],
-        addedDate: friend['friend_add_date'],
-      );
-      children!.add(newFriend);
-    }
+    friends = await Api.getFriends(Shared.getUserId()!);
+    setState(() {});
   }
 
   @override
@@ -54,10 +31,37 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return RefreshIndicator(
-      onRefresh: getFriends,
-      color: kBlack,
-      child: ListView(padding: const EdgeInsets.only(bottom: 100), children: children!),
-    );
+    return Builder(builder: (context) {
+      children = [
+        const ProfileImage(profileImg: 'profile.jpg'),
+        ProfileUsername(username: Shared.getUserName()!),
+        const ProfileBalanceInformation(
+          payedAmount: '410,000',
+          earnedAmount: '665,000',
+          pendingBalance: '255,000',
+          pendingBalanceValue: false,
+        ),
+        ProfileFriendsText(
+          onAddFriendBuilder: (context) => const ProfileAddFriendScreen(),
+        ),
+      ];
+
+      for (var friend in friends) {
+        ProfileFriendBubble newFriend = ProfileFriendBubble(
+          friendUsername: friend['friend_username'],
+          friendProfileImg: friend['friend_profile_image'],
+          amount: friend['friend_balance'],
+          amountValue: friend['friend_balance_type'],
+          addedDate: friend['friend_add_date'],
+        );
+        children!.add(newFriend);
+      }
+
+      return RefreshIndicator(
+        onRefresh: getFriends,
+        color: kBlack,
+        child: ListView(padding: const EdgeInsets.only(bottom: 100), children: children!),
+      );
+    });
   }
 }
