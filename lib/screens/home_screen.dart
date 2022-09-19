@@ -20,17 +20,20 @@ class _HomeScreenState extends State<HomeScreen> {
   bool notification = false;
   String? _username;
   String? _userId;
+  List<Widget>? children;
+
+  List<dynamic> categories = [];
 
   Future<void> getNotifications() async {
     notification = false;
     List<dynamic> notifications = [];
     notifications = await Api.getFriendRequests(_userId!);
-    for (var notification in notifications) {
-      if (notification['status'] != 'approved') {
-        if (notifications.isNotEmpty) setState(() => this.notification = true);
-      }
-    }
-    //add new Api and do exactly like above
+    if (notifications.isNotEmpty) setState(() => notification = true);
+    notifications = [];
+
+    notifications = await Api.getCatRequests(_userId!);
+    if (notifications.isNotEmpty) setState(() => notification = true);
+
     setState(() {});
   }
 
@@ -44,82 +47,86 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return RefreshIndicator(
-      color: kBlack,
-      onRefresh: getNotifications,
-      child: ListView(
-        padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 12).copyWith(bottom: 100),
-        children: <Widget>[
-          HomeAppBar(
-            profileImg: 'profile.jpg',
-            username: _username!,
-            notification: notification,
-            onPressed: () => Navigator.pushNamed(context, HomeNotificationsScreen.id),
-          ),
-          const HomeCatSelector(
-            children: [
-              HomeCatSelectorBubble(
-                catName: 'birdan biyanadi',
-                priceColor: kGreen,
-                price: '30000',
-                selected: true,
-              ),
-              HomeCatSelectorBubble(
-                catName: 'da birajanidi',
-                priceColor: kRed,
-                price: '20000',
-                selected: false,
-              ),
-            ],
-          ),
-          const HomeCatDetails(
-            priceValue: true,
-            price: '30000',
-            children: [
-              HomeCatFriendDetailsBubble(
-                priceValue: true,
-                friendPrice: '30000',
-                friendUsername: 'Mohamad',
-              ),
-              HomeCatFriendDetailsBubble(
-                priceValue: true,
-                friendPrice: '0',
-                friendUsername: 'AmirHossein',
-              ),
-            ],
-          ),
-          HomePurchaseBubble(
-            onTapForCollapse: () => setState(() => visible = !visible),
-            motherBuyer: 'Sadra',
-            purchaseDescription: 'Los Pollos hermanos',
-            purchasePrice: '90000',
-            visible: visible,
-            children: [
-              HomePurchaseBubbleIndividualDetails(
-                userProfile: 'profile.jpg',
-                username: 'Sadra',
-                paymentStatus: true,
-                individualPayment: '30000',
-                onPaymentComplete: () {},
-              ),
-              HomePurchaseBubbleIndividualDetails(
-                userProfile: 'profile.jpg',
-                username: 'Mohamad',
-                paymentStatus: false,
-                individualPayment: '30000',
-                onPaymentComplete: () {},
-              ),
-              HomePurchaseBubbleIndividualDetails(
-                userProfile: 'profile.jpg',
-                username: 'AmirHossein',
-                paymentStatus: true,
-                individualPayment: '30000',
-                onPaymentComplete: () {},
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
+    return Builder(builder: (context) {
+      children = [
+        HomeAppBar(
+          profileImg: 'profile.jpg',
+          username: _username!,
+          notification: notification,
+          onPressed: () => Navigator.pushNamed(context, HomeNotificationsScreen.id),
+        ),
+        Builder(builder: (context) {
+          List<Widget> children = [];
+
+          for (var category in categories) {
+            HomeCatSelectorBubble child = HomeCatSelectorBubble(
+              catName: category['cat_name'],
+              selected: false,
+              onTap: () {},
+            );
+            children.add(child);
+          }
+
+          return HomeCatSelector(
+            children: children,
+          );
+        }),
+        const HomeCatDetails(
+          priceValue: true,
+          price: '30000',
+          children: [
+            HomeCatFriendDetailsBubble(
+              priceValue: true,
+              friendPrice: '30000',
+              friendUsername: 'Mohamad',
+            ),
+            HomeCatFriendDetailsBubble(
+              priceValue: true,
+              friendPrice: '0',
+              friendUsername: 'AmirHossein',
+            ),
+          ],
+        ),
+        HomePurchaseBubble(
+          onTapForCollapse: () => setState(() => visible = !visible),
+          motherBuyer: 'Sadra',
+          purchaseDescription: 'Los Pollos hermanos',
+          purchasePrice: '90000',
+          visible: visible,
+          children: [
+            HomePurchaseBubbleIndividualDetails(
+              userProfile: 'profile.jpg',
+              username: 'Sadra',
+              paymentStatus: true,
+              individualPayment: '30000',
+              onPaymentComplete: () {},
+            ),
+            HomePurchaseBubbleIndividualDetails(
+              userProfile: 'profile.jpg',
+              username: 'Mohamad',
+              paymentStatus: false,
+              individualPayment: '30000',
+              onPaymentComplete: () {},
+            ),
+            HomePurchaseBubbleIndividualDetails(
+              userProfile: 'profile.jpg',
+              username: 'AmirHossein',
+              paymentStatus: true,
+              individualPayment: '30000',
+              onPaymentComplete: () {},
+            ),
+          ],
+        ),
+      ];
+
+      return RefreshIndicator(
+        color: kBlack,
+        onRefresh: getNotifications,
+        child: ListView(
+          padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 12).copyWith(bottom: 100),
+          children: children!,
+        ),
+      );
+    });
   }
 }
