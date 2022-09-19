@@ -16,10 +16,23 @@ class _AddAddCategoryScreenState extends State<AddAddCategoryScreen> {
   List<dynamic> friends = [];
   List<String> selectedFriends = [];
   List<AddFriendBubble> children = [];
+  String catName = '';
+  bool loading = false;
 
   Future<void> getFriends() async {
     friends = await Api.getFriends(Shared.getUserId()!);
-    setState(() {});
+    setState(() => loading = false);
+  }
+
+  Map<String, dynamic> catReq() {
+    return {
+      'id': Shared.getUserId(),
+      'username': Shared.getUserName(),
+      'profile_image': 'profile.jpg',
+      'cat_name': catName,
+      'accepted': [Shared.getUserName()!],
+      'pending': selectedFriends
+    };
   }
 
   @override
@@ -33,11 +46,20 @@ class _AddAddCategoryScreenState extends State<AddAddCategoryScreen> {
     final dark = MediaQuery.of(context).platformBrightness == Brightness.dark;
     return Scaffold(
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          setState(() {});
+        onPressed: () async {
+          if (selectedFriends.isNotEmpty && catName != '') {
+            setState(() => loading = true);
+            for (var friend in selectedFriends) {
+              String friendId = await Api.getId(friend);
+              List<dynamic> catRequests = await Api.getCatRequests(friendId);
+              catRequests.add(catReq());
+              await Api.setCatRequest(friendId, catRequests);
+            }
+            getFriends();
+          }
         },
         backgroundColor: kDarkModeBrown,
-        child: const Icon(Icons.add),
+        child: loading ? const CircularProgressIndicator(color: kBlack) : const Icon(Icons.add),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       resizeToAvoidBottomInset: false,
@@ -85,7 +107,7 @@ class _AddAddCategoryScreenState extends State<AddAddCategoryScreen> {
                   borderSide: BorderSide(color: kDarkModeBrown),
                 ),
               ),
-              onChanged: (value) {},
+              onChanged: (value) => catName = value,
             ),
           ),
           Padding(
