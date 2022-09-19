@@ -17,12 +17,24 @@ class HomeNotificationsScreen extends StatefulWidget {
 class _HomeNotificationsScreenState extends State<HomeNotificationsScreen> {
   List<Widget>? children = [];
   List<dynamic> friendRequests = [];
+  List<dynamic> catRequests = [];
   bool loading = false;
 
-  Future<void> getNotifications() async {
+  Future<void> getFriendNotifications() async {
     friendRequests = [];
     friendRequests = await Api.getFriendRequests(Shared.getUserId().toString());
     setState(() => loading = false);
+  }
+
+  Future<void> getCatNotifications() async {
+    catRequests = [];
+    catRequests = await Api.getCatRequests(Shared.getUserId().toString());
+    setState(() => loading = false);
+  }
+
+  Future<void> getNotifications() async {
+    getFriendNotifications();
+    getCatNotifications();
   }
 
   ScaffoldFeatureController<SnackBar, SnackBarClosedReason> dialog(bool accepted, String status) {
@@ -87,7 +99,6 @@ class _HomeNotificationsScreenState extends State<HomeNotificationsScreen> {
         child: Builder(builder: (context) {
           children = [];
           for (int i = 0; i < friendRequests.length; i++) {
-            //for cat, create whole new for() and add new list to end of this list
             List<dynamic> friendsList = [];
             String requesterId = friendRequests[i]['requester_id'].toString();
             String requesterUsername = friendRequests[i]['requester_username'];
@@ -106,9 +117,11 @@ class _HomeNotificationsScreenState extends State<HomeNotificationsScreen> {
                 setState(() => loading = true);
                 friendsList = await Api.getFriends(Shared.getUserId()!);
                 for (var friend in friendsList) {
-                  if (friend['friend_id'] == requesterId) ok = false;
-                  getNotifications();
-                  dialog(false, 'Accepted');
+                  if (friend['friend_id'] == requesterId) {
+                    ok = false;
+                    getFriendNotifications();
+                    dialog(false, 'Accepted');
+                  }
                 }
                 if (ok) {
                   friendsList.add(newFriend(requesterId, requesterUsername, requesterPI, formattedDate));
@@ -121,7 +134,7 @@ class _HomeNotificationsScreenState extends State<HomeNotificationsScreen> {
 
                   friendRequests.remove(friendRequests[i]);
                   await Api.sendFriendRequest(Shared.getUserId()!, friendRequests);
-                  getNotifications();
+                  getFriendNotifications();
                   dialog(true, 'Accepted');
                 }
               },
@@ -129,11 +142,55 @@ class _HomeNotificationsScreenState extends State<HomeNotificationsScreen> {
                 setState(() => loading = true);
                 friendRequests.remove(friendRequests[i]);
                 await Api.sendFriendRequest(Shared.getUserId()!, friendRequests);
-                getNotifications();
+                getFriendNotifications();
               },
             );
             children!.add(newBubble);
           }
+          for (int i = 0; i < catRequests.length; i++) {
+            bool showReq = true;
+            String requesterUsername = catRequests[i]['username'];
+            String requesterPI = catRequests[i]['profile_image'];
+            String requestedCatName = catRequests[i]['cat_name'];
+
+            for (String req in catRequests[i]['accepted']) {
+              if (req == Shared.getUserName()!) showReq = false;
+            }
+
+            if (showReq) {
+              HomeNotificationBubble newBubble = HomeNotificationBubble(
+                catRequest: true,
+                requesterUsername: requesterUsername,
+                requestedCatName: requestedCatName,
+                requesterProfileImg: requesterPI,
+                onAccept: () async {
+                  bool go = false;
+                  List<dynamic> pending = [];
+                  List<dynamic> accepted = [];
+                  pending = catRequests[i]['pending'];
+                  accepted = catRequests[i]['accepted'];
+
+                  setState(() => loading = true);
+                  pending.remove(Shared.getUserName()!);
+                  accepted.add(Shared.getUserName()!);
+
+                  if (pending.isEmpty) go = true;
+
+                  await Api.setCatRequest(Shared.getUserId()!, catRequests);
+                  if (!go) getCatNotifications();
+                  dialog(true, 'Accepted');
+
+                  if (go) {
+                    //write an API for creating new category tbl and set categories_ids
+                    getCatNotifications();
+                  }
+                },
+                onDeny: () {},
+              );
+              children!.add(newBubble);
+            }
+          }
+
           return ListView(
             padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12).copyWith(bottom: 100),
             children: children!,
