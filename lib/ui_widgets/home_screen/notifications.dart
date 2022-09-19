@@ -1,80 +1,52 @@
+import 'package:my_hesab_ketab/ui_widgets/home_screen/notification_bubble.dart';
+import 'package:my_hesab_ketab/screens/utilities/shared.dart';
+import 'package:my_hesab_ketab/screens/utilities/api.dart';
+import 'package:my_hesab_ketab/constants.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:my_hesab_ketab/constants.dart';
-import 'package:my_hesab_ketab/screens/utilities/api.dart';
-import 'package:my_hesab_ketab/screens/utilities/shared.dart';
-import 'package:my_hesab_ketab/ui_widgets/home_screen/notification_bubble.dart';
+import 'package:intl/intl.dart';
 
 class HomeNotificationsScreen extends StatefulWidget {
   const HomeNotificationsScreen({Key? key}) : super(key: key);
+  static const String id = 'home_notifications_screen';
 
   @override
   State<HomeNotificationsScreen> createState() => _HomeNotificationsScreenState();
 }
 
 class _HomeNotificationsScreenState extends State<HomeNotificationsScreen> {
-  List<Widget>? notifications;
+  List<Widget>? children = [];
+  List<dynamic> friendRequests = [];
   bool loading = false;
 
   Future<void> getNotifications() async {
-    notifications = [];
-
-    List<dynamic> friendRequests = [];
-    List<dynamic> onHandFriendRequests = await Api.getFriendRequests(Shared.getUserId().toString());
-    for (var friendRequest in onHandFriendRequests) {
-      if (friendRequest['status'] == 'unapproved') friendRequests.add(friendRequest);
-    }
-    for (var friendRequest in friendRequests) {
-      int counter = 0;
-      List<dynamic> friendsList;
-      String targetId = friendRequest['requester_id'].toString();
-      String targetUsername = friendRequest['requester_username'];
-      String targetPP = friendRequest['requester_profile_image'];
-
-      HomeNotificationBubble newBubble = HomeNotificationBubble(
-        requesterProfileImg: targetPP,
-        requesterUsername: targetUsername,
-        requestedCatName: 'dog',
-        catRequest: false,
-        onAccept: () async {
-          setState(() => loading = true);
-          friendsList = await Api.getFriends(targetId);
-          friendsList.add(newFriend(Shared.getUserId()!, Shared.getUserName()!, 'profile.jpg'));
-          await Api.setFriends(targetId, friendsList);
-          friendsList = [];
-
-          friendsList = await Api.getFriends(Shared.getUserId().toString());
-          friendsList.add(newFriend(targetId, targetUsername, targetPP));
-          await Api.setFriends(Shared.getUserId()!, friendsList);
-
-          friendRequests[counter] = updateRequest(targetId, targetUsername, targetPP);
-          await Api.sendFriendRequest(Shared.getUserId()!, friendRequests);
-          setState(() => loading = false);
-        },
-        onDeny: () {},
-      );
-
-      notifications!.add(newBubble);
-    }
-    setState(() {});
+    friendRequests = [];
+    friendRequests = await Api.getFriendRequests(Shared.getUserId().toString());
+    setState(() => loading = false);
   }
 
-  Map<String, dynamic> newFriend(String friendId, String friendUsername, String friendPP) {
+  ScaffoldFeatureController<SnackBar, SnackBarClosedReason> dialog(bool accepted, String status) {
+    return accepted
+        ? ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(status, textAlign: TextAlign.center),
+            ),
+          )
+        : ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Already $status', textAlign: TextAlign.center),
+            ),
+          );
+  }
+
+  Map<String, dynamic> newFriend(String friendId, String friendUsername, String friendPP, String addedDate) {
     return {
       'friend_id': friendId,
       'friend_username': friendUsername,
       'friend_profile_image': friendPP,
       'friend_balance': '',
-      'friend_balance_type': true
-    };
-  }
-
-  Map<String, dynamic> updateRequest(String requesterId, String requesterUsername, String requesterImage) {
-    return {
-      "requester_id": requesterId,
-      "requester_username": requesterUsername,
-      "requester_profile_image": requesterImage,
-      "status": 'approved'
+      'friend_balance_type': true,
+      'friend_add_date': addedDate
     };
   }
 
@@ -90,7 +62,7 @@ class _HomeNotificationsScreenState extends State<HomeNotificationsScreen> {
     return Scaffold(
       floatingActionButton:
           loading ? CircularProgressIndicator(color: dark ? kDarkModeBrown : kLightModeBrown) : Container(),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerTop,
       resizeToAvoidBottomInset: false,
       backgroundColor: dark ? kBlack : kWhite,
       appBar: AppBar(
@@ -112,10 +84,61 @@ class _HomeNotificationsScreenState extends State<HomeNotificationsScreen> {
       body: RefreshIndicator(
         color: kBlack,
         onRefresh: getNotifications,
-        child: ListView(
-          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12).copyWith(bottom: 100),
-          children: notifications!,
-        ),
+        child: Builder(builder: (context) {
+          children = [];
+          for (int i = 0; i < friendRequests.length; i++) {
+            //for cat, create whole new for() and add new list to end of this list
+            List<dynamic> friendsList = [];
+            String requesterId = friendRequests[i]['requester_id'].toString();
+            String requesterUsername = friendRequests[i]['requester_username'];
+            String requesterPI = friendRequests[i]['requester_profile_image'];
+
+            HomeNotificationBubble newBubble = HomeNotificationBubble(
+              requesterProfileImg: requesterPI,
+              requesterUsername: requesterUsername,
+              requestedCatName: 'dog',
+              catRequest: false,
+              onAccept: () async {
+                bool ok = true;
+                DateTime now = DateTime.now();
+                String formattedDate = DateFormat('yyyy-MM-dd').format(now);
+
+                setState(() => loading = true);
+                friendsList = await Api.getFriends(Shared.getUserId()!);
+                for (var friend in friendsList) {
+                  if (friend['friend_id'] == requesterId) ok = false;
+                  getNotifications();
+                  dialog(false, 'Accepted');
+                }
+                if (ok) {
+                  friendsList.add(newFriend(requesterId, requesterUsername, requesterPI, formattedDate));
+                  await Api.setFriends(Shared.getUserId()!, friendsList);
+                  friendsList = [];
+
+                  friendsList = await Api.getFriends(requesterId);
+                  friendsList.add(newFriend(Shared.getUserId()!, Shared.getUserName()!, 'profile.jpg', formattedDate));
+                  await Api.setFriends(requesterId, friendsList);
+
+                  friendRequests.remove(friendRequests[i]);
+                  await Api.sendFriendRequest(Shared.getUserId()!, friendRequests);
+                  getNotifications();
+                  dialog(true, 'Accepted');
+                }
+              },
+              onDeny: () async {
+                setState(() => loading = true);
+                friendRequests.remove(friendRequests[i]);
+                await Api.sendFriendRequest(Shared.getUserId()!, friendRequests);
+                getNotifications();
+              },
+            );
+            children!.add(newBubble);
+          }
+          return ListView(
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12).copyWith(bottom: 100),
+            children: children!,
+          );
+        }),
       ),
     );
   }
