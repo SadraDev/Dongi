@@ -15,7 +15,7 @@ class HomeNotificationsScreen extends StatefulWidget {
 }
 
 class _HomeNotificationsScreenState extends State<HomeNotificationsScreen> {
-  List<Widget>? children = [];
+  List<Widget>? notifications = [];
   List<dynamic> friendRequests = [];
   List<dynamic> catRequests = [];
   bool loading = false;
@@ -62,6 +62,10 @@ class _HomeNotificationsScreenState extends State<HomeNotificationsScreen> {
     };
   }
 
+  Map<String, dynamic> newCat(String tblName, String catName, List<dynamic> members) {
+    return {'tbl_name': tblName, 'cat_name': catName, 'members': members};
+  }
+
   @override
   void initState() {
     super.initState();
@@ -97,7 +101,7 @@ class _HomeNotificationsScreenState extends State<HomeNotificationsScreen> {
         color: kBlack,
         onRefresh: getNotifications,
         child: Builder(builder: (context) {
-          children = [];
+          notifications = [];
           for (int i = 0; i < friendRequests.length; i++) {
             List<dynamic> friendsList = [];
             String requesterId = friendRequests[i]['requester_id'].toString();
@@ -145,7 +149,7 @@ class _HomeNotificationsScreenState extends State<HomeNotificationsScreen> {
                 getFriendNotifications();
               },
             );
-            children!.add(newBubble);
+            notifications!.add(newBubble);
           }
           for (int i = 0; i < catRequests.length; i++) {
             bool showReq = true;
@@ -164,36 +168,76 @@ class _HomeNotificationsScreenState extends State<HomeNotificationsScreen> {
                 requestedCatName: requestedCatName,
                 requesterProfileImg: requesterPI,
                 onAccept: () async {
-                  bool go = false;
                   List<dynamic> pending = [];
                   List<dynamic> accepted = [];
+                  List<dynamic> members = [];
                   pending = catRequests[i]['pending'];
                   accepted = catRequests[i]['accepted'];
+                  members = pending + accepted;
+                  members.remove(catRequests[i]['username']);
 
                   setState(() => loading = true);
                   pending.remove(Shared.getUserName()!);
                   accepted.add(Shared.getUserName()!);
 
-                  if (pending.isEmpty) go = true;
+                  for (var member in members) {
+                    String id = await Api.getId(member);
+                    List<dynamic> catRequests = [];
+                    catRequests = await Api.getCatRequests(id);
+                    for (int counter = 0; counter < catRequests.length; counter++) {
+                      if (catRequests[counter]['id'] == this.catRequests[i]['id']) {
+                        List<dynamic> pending = [];
+                        List<dynamic> accepted = [];
+                        pending = catRequests[counter]['pending'];
+                        accepted = catRequests[counter]['accepted'];
 
-                  await Api.setCatRequest(Shared.getUserId()!, catRequests);
-                  if (!go) getCatNotifications();
-                  dialog(true, 'Accepted');
+                        pending.remove(Shared.getUserName()!);
+                        accepted.add(Shared.getUserName()!);
 
-                  if (go) {
-                    //write an API for creating new category tbl and set categories_ids
+                        await Api.setCatRequest(id, catRequests);
+                      }
+                    }
+                  }
+
+                  if (pending.isNotEmpty) {
                     getCatNotifications();
+                    dialog(true, 'Accepted');
+                  }
+
+                  if (pending.isEmpty) {
+                    DateTime tblName = DateTime.now();
+                    for (var member in accepted) {
+                      String id = await Api.getId(member);
+                      List<dynamic> cats = await Api.getCat(id);
+                      cats.add(newCat(tblName.toString(), catRequests[i]['cat_name'], accepted));
+                      await Api.setCat(id, cats, tblName.toString());
+                    }
+
+                    for (var member in members) {
+                      String id = await Api.getId(member);
+                      List<dynamic> catRequests = [];
+                      catRequests = await Api.getCatRequests(id);
+                      for (int counter = 0; counter < catRequests.length; counter++) {
+                        if (catRequests[counter]['id'] == this.catRequests[i]['id']) {
+                          catRequests.remove(catRequests[counter]);
+                          await Api.setCatRequest(id, catRequests);
+                        }
+                      }
+                    }
+
+                    getCatNotifications();
+                    dialog(true, 'Accepted');
                   }
                 },
                 onDeny: () {},
               );
-              children!.add(newBubble);
+              notifications!.add(newBubble);
             }
           }
 
           return ListView(
             padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12).copyWith(bottom: 100),
-            children: children!,
+            children: notifications!,
           );
         }),
       ),
