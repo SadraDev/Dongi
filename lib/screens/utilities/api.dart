@@ -122,4 +122,21 @@ class Api {
     if (response.statusCode == 200) return true;
     return false;
   }
+
+  static Future<List<dynamic>> getCat(String targetId) async {
+    Uri url = Uri.parse(kGetCatsUrl);
+    Response response = await post(url, body: {'type': 'pull', 'target_id': targetId});
+
+    if (response.statusCode == 200) return jsonDecode(response.body);
+    return [];
+  }
+
+  static Future<bool> setCat(String userId, List<dynamic> request, String tblName) async {
+    Uri url = Uri.parse(kGetCatsUrl);
+    Response response = await post(url,
+        body: {'type': 'push', 'target_id': userId, 'request': jsonEncode(request), 'tbl_name': tblName});
+
+    if (response.statusCode == 200) return true;
+    return false;
+  }
 }
