@@ -20,43 +20,34 @@ class HomeCatSelector extends StatelessWidget {
 }
 
 class HomeCatSelectorBubble extends StatelessWidget {
-  const HomeCatSelectorBubble(
-      {Key? key, required this.catName, required this.priceColor, required this.price, required this.selected})
+  const HomeCatSelectorBubble({Key? key, required this.catName, required this.selected, required this.onTap})
       : super(key: key);
   final bool? selected;
   final String? catName;
-  final String? price;
-  final Color? priceColor;
+  final void Function() onTap;
 
   @override
   Widget build(BuildContext context) {
     final dark = MediaQuery.of(context).platformBrightness == Brightness.dark;
-    return Card(
-      color: dark
-          ? selected!
-              ? kLighterGrey
-              : kGrey
-          : selected!
-              ? kGrey
-              : kBlack,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-      child: Padding(
-        padding: const EdgeInsets.all(12.0),
-        child: Column(
-          children: <Widget>[
-            Text(
-              catName!,
-              style: const TextStyle(
-                color: kWhite,
-              ),
+    return GestureDetector(
+      onTap: onTap,
+      child: Card(
+        color: dark
+            ? selected!
+                ? kLighterGrey
+                : kGrey
+            : selected!
+                ? kGrey
+                : kBlack,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+        child: Padding(
+          padding: const EdgeInsets.all(12.0),
+          child: Text(
+            catName!,
+            style: const TextStyle(
+              color: kWhite,
             ),
-            Text(
-              price!,
-              style: TextStyle(
-                color: priceColor!,
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
