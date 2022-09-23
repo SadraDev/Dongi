@@ -24,9 +24,9 @@ class _AddAddCategoryScreenState extends State<AddAddCategoryScreen> {
     setState(() => loading = false);
   }
 
-  Map<String, dynamic> catReq() {
+  Map<String, dynamic> catReq(String id) {
     return {
-      'id': Shared.getUserId(),
+      'id': id,
       'username': Shared.getUserName(),
       'profile_image': 'profile.jpg',
       'cat_name': catName,
@@ -49,10 +49,11 @@ class _AddAddCategoryScreenState extends State<AddAddCategoryScreen> {
         onPressed: () async {
           if (selectedFriends.isNotEmpty && catName != '') {
             setState(() => loading = true);
+            String id = DateTime.now().toString();
             for (var friend in selectedFriends) {
               String friendId = await Api.getId(friend);
               List<dynamic> catRequests = await Api.getCatRequests(friendId);
-              catRequests.add(catReq());
+              catRequests.add(catReq(id));
               await Api.setCatRequest(friendId, catRequests);
             }
             getFriends();
