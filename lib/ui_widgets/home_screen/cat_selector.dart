@@ -33,7 +33,7 @@ class HomeCatSelectorBubble extends StatelessWidget {
       onTap: onTap,
       child: Card(
         color: dark
-            ? selected!
+            ? !selected!
                 ? kLighterGrey
                 : kGrey
             : selected!
