@@ -161,7 +161,7 @@ class _AddScreenState extends State<AddScreen> {
                   for (var me in individualPayment) {
                     if (me[0] == Shared.getUserName()) me[2] = 'confirmed';
                   }
-                  //await Api.setCatTable(selected!, Shared.getUserName()!, description, price, individualPayment);
+                  await Api.setCatTable(selected!, Shared.getUserName()!, description, price, individualPayment);
                   showDialog(
                     context: context,
                     builder: (context) => const AlertDialog(
