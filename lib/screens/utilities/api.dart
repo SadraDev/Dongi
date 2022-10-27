@@ -139,4 +139,42 @@ class Api {
     if (response.statusCode == 200) return true;
     return false;
   }
+
+  static Future<List<dynamic>> getCatTable(String tblName) async {
+    Uri url = Uri.parse(kGetCatTable);
+    Response response = await post(url, body: {'type': 'get', 'tbl_name': tblName});
+
+    if (response.statusCode == 200) return jsonDecode(response.body);
+    return [];
+  }
+
+  static Future<bool> setCatTable(String tblName, String motherBuyer, String purchaseDes, String purchasePrice,
+      List<dynamic> individualPayments) async {
+    Uri url = Uri.parse(kGetCatTable);
+    Response response = await post(url, body: {
+      'type': 'set',
+      'tbl_name': tblName,
+      'mother_buyer': motherBuyer,
+      'purchase_description': purchaseDes,
+      'purchase_price': purchasePrice,
+      'individual_payments': jsonEncode(individualPayments)
+    });
+
+    if (response.statusCode == 200) return true;
+    return false;
+  }
+
+  static Future<bool> updateCatTable(String tblName, List<dynamic> individualPayments, String status, String id) async {
+    Uri url = Uri.parse(kGetCatTable);
+    Response response = await post(url, body: {
+      'type': 'update',
+      'tbl_name': tblName,
+      'individual_payments': jsonEncode(individualPayments),
+      'status': status,
+      'id': id
+    });
+
+    if (response.statusCode == 200) return true;
+    return false;
+  }
 }
