@@ -54,7 +54,6 @@ class AddIndividualPriceTextField extends StatelessWidget {
           ),
         ),
         onChanged: onSubmitted,
-        onSubmitted: onSubmitted,
       ),
     );
   }
