@@ -36,10 +36,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
         const ProfileImage(profileImg: 'profile.jpg'),
         ProfileUsername(username: Shared.getUserName()!),
         const ProfileBalanceInformation(
-          payedAmount: '410,000',
-          earnedAmount: '665,000',
-          pendingBalance: '255,000',
-          pendingBalanceValue: false,
+          payedAmount: 'U',
+          earnedAmount: 'U',
+          pendingBalance: 'UwU',
+          pendingBalanceValue: true,
         ),
         ProfileFriendsText(
           onAddFriendBuilder: (context) => const ProfileAddFriendScreen(),
