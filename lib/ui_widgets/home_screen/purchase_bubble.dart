@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:my_hesab_ketab/screens/utilities/shared.dart';
 
 import '../../constants.dart';
 
@@ -10,9 +11,11 @@ class HomePurchaseBubble extends StatelessWidget {
       required this.purchaseDescription,
       required this.purchasePrice,
       required this.visible,
-      required this.children})
+      required this.children,
+      required this.isMe})
       : super(key: key);
   final bool visible;
+  final bool isMe;
   final void Function() onTapForCollapse;
   final List<Widget> children;
   final String motherBuyer;
@@ -42,7 +45,7 @@ class HomePurchaseBubble extends StatelessWidget {
                           motherBuyer,
                           style: const TextStyle(
                             fontSize: 20,
-                            color: kWhite,
+                            color: kDarkModeBrown,
                           ),
                         ),
                         Text(
@@ -59,9 +62,9 @@ class HomePurchaseBubble extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
                     child: Text(
                       purchasePrice,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 20,
-                        color: kRed, //todo
+                        color: isMe ? kRed : kDarkModeBrown,
                       ),
                     ),
                   ),
@@ -89,11 +92,13 @@ class HomePurchaseBubbleIndividualDetails extends StatelessWidget {
       required this.username,
       required this.paymentStatus,
       required this.individualPayment,
-      required this.onPaymentComplete})
+      required this.onPaymentComplete,
+      required this.isMe})
       : super(key: key);
   final String userProfile;
   final String username;
   final bool paymentStatus;
+  final bool isMe;
   final String individualPayment;
   final void Function() onPaymentComplete;
 
@@ -125,7 +130,7 @@ class HomePurchaseBubbleIndividualDetails extends StatelessWidget {
                   username,
                   style: const TextStyle(
                     fontSize: 18,
-                    color: kWhite,
+                    color: kDarkModeBrown,
                   ),
                 ),
                 Padding(
@@ -145,16 +150,19 @@ class HomePurchaseBubbleIndividualDetails extends StatelessWidget {
         Row(
           children: <Widget>[
             Visibility(
-              visible: !paymentStatus,
-              child: Card(
-                elevation: 0,
-                shape: const CircleBorder(),
-                color: dark ? kGrey : kBlack,
-                child: InkWell(
-                  onLongPress: onPaymentComplete,
-                  child: dark
-                      ? const Icon(Icons.check, color: Colors.black)
-                      : const Icon(Icons.check, color: Colors.white),
+              visible: isMe,
+              child: Visibility(
+                visible: !paymentStatus,
+                child: Card(
+                  elevation: 0,
+                  shape: const CircleBorder(),
+                  color: dark ? kGrey : kBlack,
+                  child: InkWell(
+                    onTap: onPaymentComplete,
+                    child: dark
+                        ? const Icon(Icons.check, color: Colors.black)
+                        : const Icon(Icons.check, color: Colors.white),
+                  ),
                 ),
               ),
             ),
@@ -164,7 +172,17 @@ class HomePurchaseBubbleIndividualDetails extends StatelessWidget {
                 individualPayment,
                 style: TextStyle(
                   fontSize: 18,
-                  color: paymentStatus ? kGreen : kYellow,
+                  color: isMe
+                      ? paymentStatus
+                          ? kGreen
+                          : kYellow
+                      : username == Shared.getUserName()
+                          ? paymentStatus
+                              ? kRed
+                              : kYellow
+                          : paymentStatus
+                              ? kDarkModeBrown
+                              : kYellow,
                 ),
               ),
             )
