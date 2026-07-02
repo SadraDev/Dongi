@@ -1,5 +1,7 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthService {
   // Use 10.0.2.2 for Android Emulator, 127.0.0.1 for iOS Simulator
@@ -16,6 +18,37 @@ class AuthService {
 
   // Initialize Secure Storage
   static const FlutterSecureStorage _secureStorage = FlutterSecureStorage();
+
+  // --- Cross-Platform Storage Helpers ---
+
+  static Future<void> _writeStorage(String key, String value) async {
+    if (kIsWeb) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(key, value);
+    } else {
+      await _secureStorage.write(key: key, value: value);
+    }
+  }
+
+  static Future<String?> _readStorage(String key) async {
+    if (kIsWeb) {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getString(key);
+    } else {
+      return await _secureStorage.read(key: key);
+    }
+  }
+
+  static Future<void> _deleteStorage(String key) async {
+    if (kIsWeb) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(key);
+    } else {
+      await _secureStorage.delete(key: key);
+    }
+  }
+
+  // --------------------------------------
 
   // Register
   static Future<String?> register(String username, String password) async {
@@ -72,24 +105,25 @@ class AuthService {
 
   // Logout
   static Future<void> logout() async {
-    await _secureStorage.delete(key: _tokenKey);
-    await _secureStorage.delete(key: _userIdKey);
+    await _deleteStorage(_tokenKey);
+    await _deleteStorage(_userIdKey);
+    await _deleteStorage(_userNameKey);
   }
 
   // Check if logged in
   static Future<bool> isLoggedIn() async {
-    final token = await _secureStorage.read(key: _tokenKey);
+    final token = await _readStorage(_tokenKey);
     return token != null;
   }
 
   // Get current token
   static Future<String?> getToken() async {
-    return await _secureStorage.read(key: _tokenKey);
+    return await _readStorage(_tokenKey);
   }
 
   // Get current user ID
   static Future<int> getCurrentUserId() async {
-    final idString = await _secureStorage.read(key: _userIdKey);
+    final idString = await _readStorage(_userIdKey);
     if (idString != null) {
       return int.tryParse(idString) ?? 0;
     }
@@ -98,21 +132,21 @@ class AuthService {
 
   // Get current username
   static Future<String?> getCurrentUserName() async {
-    return await _secureStorage.read(key: _userNameKey);
+    return await _readStorage(_userNameKey);
   }
 
   // Save token securely
   static Future<void> _saveToken(String token) async {
-    await _secureStorage.write(key: _tokenKey, value: token);
+    await _writeStorage(_tokenKey, token);
   }
 
   // Save User ID securely
   static Future<void> _saveUserId(int userId) async {
-    await _secureStorage.write(key: _userIdKey, value: userId.toString());
+    await _writeStorage(_userIdKey, userId.toString());
   }
 
   static Future<void> _saveUserName(String userName) async {
-    await _secureStorage.write(key: _userNameKey, value: userName.toString());
+    await _writeStorage(_userNameKey, userName.toString());
   }
 
   // Helper to extract errors seamlessly from Django DRF via Dio
