@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../services/friend_service.dart';
 import '../../services/group_service.dart';
 import '../../services/notification_service.dart';
@@ -12,6 +13,7 @@ class NotificationsScreen extends StatefulWidget {
 
 class _NotificationsScreenState extends State<NotificationsScreen> {
   late Future<List<dynamic>> _notificationsFuture;
+  final Set<int> _processingIds = {};
 
   @override
   void initState() {
@@ -25,23 +27,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     });
   }
 
-  // Helper to show consistent loading dialogs
-  void _showLoadingDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => const Center(
-        child: Card(
-          child: Padding(
-            padding: EdgeInsets.all(24),
-            child: CircularProgressIndicator(),
-          ),
-        ),
-      ),
-    );
-  }
-
-  // Helper for consistent Success SnackBars
   void _showSuccessSnackBar(String message) {
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(
@@ -55,13 +40,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         ),
         backgroundColor: Colors.green.shade600,
         behavior: SnackBarBehavior.floating,
+        elevation: 0,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       ),
     );
   }
 
-  // Helper for consistent Error SnackBars
   void _showErrorSnackBar(String message) {
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(
@@ -75,29 +60,27 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         ),
         backgroundColor: Colors.red.shade700,
         behavior: SnackBarBehavior.floating,
+        elevation: 0,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       ),
     );
   }
 
-  // Simple date formatter without needing the intl package
   String _formatDate(String dateString) {
     try {
       final date = DateTime.parse(dateString);
+      final now = DateTime.now();
+      final diff = now.difference(date);
+
+      if (diff.inMinutes < 1) return 'Just now';
+      if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+      if (diff.inHours < 24) return '${diff.inHours}h ago';
+      if (diff.inDays < 7) return '${diff.inDays}d ago';
+
       const months = [
-        'Jan',
-        'Feb',
-        'Mar',
-        'Apr',
-        'May',
-        'Jun',
-        'Jul',
-        'Aug',
-        'Sep',
-        'Oct',
-        'Nov',
-        'Dec',
+        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
       ];
       return "${months[date.month - 1]} ${date.day}";
     } catch (e) {
@@ -105,14 +88,92 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     }
   }
 
+  Future<void> _handleAccept(dynamic item) async {
+    final int id = item['id'];
+    final String type = item['type'];
+
+    setState(() => _processingIds.add(id));
+
+    try {
+      if (type == 'friend_request') {
+        await FriendService.acceptFriendRequest(item['related_id']);
+      } else if (type == 'group_invite') {
+        await GroupService.acceptGroupInvite(item['related_id']);
+      }
+      await NotificationService.markAsRead(id);
+      if (mounted) {
+        setState(() => _processingIds.remove(id));
+        _showSuccessSnackBar(
+          type == 'friend_request'
+              ? 'Friend request accepted!'
+              : 'Joined group successfully!',
+        );
+        _refreshNotifications();
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _processingIds.remove(id));
+        _showErrorSnackBar('Error: $e');
+        _refreshNotifications();
+      }
+    }
+  }
+
+  Future<void> _handleReject(dynamic item) async {
+    final int id = item['id'];
+    final String type = item['type'];
+
+    setState(() => _processingIds.add(id));
+
+    try {
+      if (type == 'friend_request') {
+        await FriendService.rejectFriendRequest(item['related_id']);
+      } else if (type == 'group_invite') {
+        await GroupService.rejectGroupInvite(item['related_id']);
+      }
+      await NotificationService.markAsRead(id);
+      if (mounted) {
+        setState(() => _processingIds.remove(id));
+        _showSuccessSnackBar(
+          type == 'friend_request'
+              ? 'Friend request rejected.'
+              : 'Group invite declined.',
+        );
+        _refreshNotifications();
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _processingIds.remove(id));
+        _showErrorSnackBar('Error: $e');
+        _refreshNotifications();
+      }
+    }
+  }
+
+  Future<void> _handleDismiss(dynamic item) async {
+    final int id = item['id'];
+    setState(() => _processingIds.add(id));
+    try {
+      await NotificationService.markAsRead(id);
+      if (mounted) {
+        setState(() => _processingIds.remove(id));
+        _refreshNotifications();
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _processingIds.remove(id));
+        _showErrorSnackBar('Error: $e');
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'Notifications',
-          style: TextStyle(fontWeight: FontWeight.w700),
-        ),
+        title: const Text('Notifications',
+            style: TextStyle(fontWeight: FontWeight.w700)),
+        elevation: 0,
       ),
       body: RefreshIndicator(
         color: Theme.of(context).primaryColor,
@@ -158,17 +219,20 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 Container(
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
-                    color: Theme.of(
-                      context,
-                    ).primaryColor.withValues(alpha: 0.1),
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.grey.shade800
+                        : Colors.grey.shade100,
                     shape: BoxShape.circle,
+                    border: Border.all(
+                      color: Theme.of(context).dividerColor.withValues(alpha: 0.3),
+                    ),
                   ),
                   child: Icon(
                     Icons.notifications_none_rounded,
-                    size: 56,
-                    color: Theme.of(
-                      context,
-                    ).primaryColor.withValues(alpha: 0.6),
+                    size: 52,
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.grey.shade600
+                        : Colors.grey.shade400,
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -177,14 +241,19 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
-                    color: Theme.of(context).textTheme.bodyLarge?.color,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   'You have no new notifications right now.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.grey.shade500
+                        : Colors.grey.shade500,
+                  ),
                 ),
               ],
             ),
@@ -206,10 +275,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               decoration: BoxDecoration(
                 color: Colors.red.shade50,
                 shape: BoxShape.circle,
+                border: Border.all(color: Colors.red.shade200),
               ),
               child: Icon(
                 Icons.error_outline_rounded,
-                size: 48,
+                size: 44,
                 color: Colors.red.shade300,
               ),
             ),
@@ -219,14 +289,18 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
-                color: Theme.of(context).textTheme.bodyLarge?.color,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: 24),
             ElevatedButton.icon(
               onPressed: _refreshNotifications,
-              icon: const Icon(Icons.refresh_rounded),
+              icon: const Icon(Icons.refresh_rounded, size: 18),
               label: const Text('Try Again'),
+              style: ElevatedButton.styleFrom(
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+              ),
             ),
           ],
         ),
@@ -236,38 +310,44 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   Widget _buildNotificationCard(dynamic item) {
     final String type = item['type'] ?? '';
+    final int id = item['id'];
+    final bool isProcessing = _processingIds.contains(id);
     final Color iconColor = _getIconColor(type);
     final IconData icon = _getIcon(type);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bool isActionable = type == 'friend_request' || type == 'group_invite';
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Card(
-        elevation: 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: BorderSide(
-            color: Theme.of(context).dividerColor.withValues(alpha: 0.5),
-            width: 1,
+      padding: const EdgeInsets.only(bottom: 10),
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 200),
+        opacity: isProcessing ? 0.5 : 1.0,
+        child: Container(
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: Theme.of(context).dividerColor.withValues(alpha: 0.3),
+            ),
           ),
-        ),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap: () => _handleNotificationTap(item),
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Row(
               children: [
-                // Modern Icon Box
+                // Colored Icon Box
                 Container(
-                  width: 46,
-                  height: 46,
+                  width: 44,
+                  height: 44,
                   decoration: BoxDecoration(
-                    color: iconColor.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(14),
+                    color: iconColor.withValues(alpha: isDark ? 0.15 : 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: iconColor.withValues(alpha: isDark ? 0.25 : 0.15),
+                    ),
                   ),
-                  child: Icon(icon, color: iconColor, size: 24),
+                  child: Icon(icon, color: iconColor, size: 22),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 14),
 
                 // Text Content
                 Expanded(
@@ -276,99 +356,82 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     children: [
                       Text(
                         item['message'] ?? 'New notification',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontWeight: FontWeight.w600,
-                          fontSize: 15,
+                          fontSize: 14,
                           height: 1.3,
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 6),
+                      const SizedBox(height: 4),
                       Text(
                         _formatDate(item['created_at']?.toString() ?? ''),
                         style: TextStyle(
                           fontSize: 12,
-                          color: Colors.grey.shade500,
+                          fontWeight: FontWeight.w500,
+                          color: isDark ? Colors.grey.shade500 : Colors.grey.shade400,
                         ),
                       ),
                     ],
                   ),
                 ),
 
-                // Subtle action indicator
-                if (type == 'friend_request' || type == 'group_invite')
-                  Icon(
-                    Icons.check_circle_outline_rounded,
-                    size: 20,
-                    color: Theme.of(
-                      context,
-                    ).primaryColor.withValues(alpha: 0.6),
-                  )
-                else
-                  Icon(
-                    Icons.close_rounded,
-                    size: 20,
-                    color: Colors.grey.shade400,
+                // Action Buttons
+                if (isActionable) ...[
+                  const SizedBox(width: 8),
+                  _ActionButton(
+                    icon: Icons.close_rounded,
+                    color: Colors.red.shade400,
+                    bgColor: isDark
+                        ? Colors.red.shade900.withValues(alpha: 0.2)
+                        : Colors.red.shade50,
+                    borderColor: isDark
+                        ? Colors.red.shade800.withValues(alpha: 0.3)
+                        : Colors.red.shade200,
+                    isLoading: isProcessing,
+                    onTap: isProcessing ? null : () {
+                      HapticFeedback.lightImpact();
+                      _handleReject(item);
+                    },
                   ),
+                  const SizedBox(width: 8),
+                  _ActionButton(
+                    icon: Icons.check_rounded,
+                    color: Colors.green.shade600,
+                    bgColor: isDark
+                        ? Colors.green.shade900.withValues(alpha: 0.2)
+                        : Colors.green.shade50,
+                    borderColor: isDark
+                        ? Colors.green.shade800.withValues(alpha: 0.3)
+                        : Colors.green.shade200,
+                    isLoading: isProcessing,
+                    onTap: isProcessing ? null : () {
+                      HapticFeedback.lightImpact();
+                      _handleAccept(item);
+                    },
+                  ),
+                ] else ...[
+                  const SizedBox(width: 8),
+                  _ActionButton(
+                    icon: Icons.close_rounded,
+                    color: Colors.grey.shade400,
+                    bgColor: isDark ? Colors.grey.shade700 : Colors.grey.shade100,
+                    borderColor: isDark ? Colors.grey.shade600 : Colors.grey.shade300,
+                    isLoading: isProcessing,
+                    onTap: isProcessing ? null : () {
+                      HapticFeedback.lightImpact();
+                      _handleDismiss(item);
+                    },
+                  ),
+                ],
               ],
             ),
           ),
         ),
       ),
     );
-  }
-
-  Future<void> _handleNotificationTap(dynamic item) async {
-    final String type = item['type'];
-
-    // --- Friend Request Logic ---
-    if (type == 'friend_request') {
-      _showLoadingDialog();
-      try {
-        await FriendService.acceptFriendRequest(item['related_id']);
-        await NotificationService.markAsRead(item['id']);
-        if (mounted) {
-          Navigator.pop(context); // Close loading
-          _showSuccessSnackBar('Friend request accepted!');
-          _refreshNotifications();
-        }
-      } catch (e) {
-        if (mounted) {
-          Navigator.pop(context);
-          _showErrorSnackBar('Error: $e');
-        }
-      }
-    }
-    // --- Group Invite Logic ---
-    else if (type == 'group_invite') {
-      _showLoadingDialog();
-      try {
-        await GroupService.acceptGroupInvite(item['related_id']);
-        await NotificationService.markAsRead(item['id']);
-        if (mounted) {
-          Navigator.pop(context); // Close loading
-          _showSuccessSnackBar('Joined group successfully!');
-          _refreshNotifications();
-        }
-      } catch (e) {
-        if (mounted) {
-          Navigator.pop(context);
-          _showErrorSnackBar('Error: $e');
-        }
-      }
-    }
-    // --- Payment Reminder Logic ---
-    else if (type == 'payment_reminder') {
-      try {
-        await NotificationService.markAsRead(item['id']);
-        if (mounted) {
-          _refreshNotifications();
-        }
-      } catch (e) {
-        if (mounted) {
-          _showErrorSnackBar('Error: $e');
-        }
-      }
-    }
   }
 
   IconData _getIcon(String type) {
@@ -395,5 +458,56 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       default:
         return Colors.grey;
     }
+  }
+}
+
+class _ActionButton extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final Color bgColor;
+  final Color borderColor;
+  final bool isLoading;
+  final VoidCallback? onTap;
+
+  const _ActionButton({
+    required this.icon,
+    required this.color,
+    required this.bgColor,
+    required this.borderColor,
+    required this.isLoading,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(10),
+        onTap: onTap,
+        child: Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color: bgColor,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: borderColor),
+          ),
+          child: isLoading
+              ? Padding(
+            padding: const EdgeInsets.all(10),
+            child: SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: color,
+              ),
+            ),
+          )
+              : Icon(icon, size: 18, color: color),
+        ),
+      ),
+    );
   }
 }

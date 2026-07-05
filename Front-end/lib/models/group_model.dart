@@ -2,25 +2,26 @@ class Group {
   final int id;
   final String name;
   final double balance;
+  final double totalOwed;
+  final double totalOwe;
   final int createdBy;
 
   Group({
     required this.id,
     required this.name,
     required this.balance,
+    required this.totalOwed,
+    required this.totalOwe,
     required this.createdBy,
   });
 
   factory Group.fromJson(Map<String, dynamic> json) {
     return Group(
-      // Use the exact keys that Django sends in the JSON response
       id: json['id'] ?? 0,
       name: json['name'] ?? 'Unknown Group',
-
-      // Parse balance safely (Django might send an int if it's exactly 0)
       balance: (json['balance'] ?? 0).toDouble(),
-
-      // Match the 'created_by' field name from your Django GroupSerializer
+      totalOwed: (json['total_owed'] ?? 0).toDouble(),
+      totalOwe: (json['total_owe'] ?? 0).toDouble(),
       createdBy: json['created_by'] ?? 0,
     );
   }

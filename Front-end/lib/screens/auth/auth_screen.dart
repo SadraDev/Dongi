@@ -30,13 +30,13 @@ class _AuthScreenState extends State<AuthScreen>
     super.initState();
     _animationController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 300),
+      duration: const Duration(milliseconds: 200),
     );
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeIn),
+      CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
     );
     _slideAnimation =
-        Tween<Offset>(begin: const Offset(0, 0.1), end: Offset.zero).animate(
+        Tween<Offset>(begin: const Offset(0, 0.05), end: Offset.zero).animate(
           CurvedAnimation(
             parent: _animationController,
             curve: Curves.easeOutCubic,
@@ -54,6 +54,7 @@ class _AuthScreenState extends State<AuthScreen>
   }
 
   void _switchAuthMode() {
+    HapticFeedback.lightImpact();
     _animationController.reverse().then((_) {
       setState(() {
         _isLogin = !_isLogin;
@@ -66,7 +67,6 @@ class _AuthScreenState extends State<AuthScreen>
   }
 
   void _submitAuth() async {
-    // Haptic feedback
     HapticFeedback.lightImpact();
 
     if (_formKey.currentState!.validate()) {
@@ -91,12 +91,12 @@ class _AuthScreenState extends State<AuthScreen>
             context,
             PageRouteBuilder(
               pageBuilder: (context, animation, secondaryAnimation) =>
-                  const HomeScreen(),
+              const HomeScreen(),
               transitionsBuilder:
                   (context, animation, secondaryAnimation, child) {
-                    return FadeTransition(opacity: animation, child: child);
-                  },
-              transitionDuration: const Duration(milliseconds: 200),
+                return FadeTransition(opacity: animation, child: child);
+              },
+              transitionDuration: const Duration(milliseconds: 400),
             ),
           );
         } else {
@@ -113,15 +113,22 @@ class _AuthScreenState extends State<AuthScreen>
       SnackBar(
         content: Row(
           children: [
-            const Icon(Icons.error_outline, color: Colors.white),
+            Icon(Icons.error_rounded,
+                color: Theme.of(context).colorScheme.onError),
             const SizedBox(width: 12),
-            Expanded(child: Text(message)),
+            Expanded(
+              child: Text(
+                message,
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+            ),
           ],
         ),
-        backgroundColor: Colors.red.shade700,
+        backgroundColor: Theme.of(context).colorScheme.error,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        elevation: 0,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
       ),
     );
   }
@@ -130,206 +137,206 @@ class _AuthScreenState extends State<AuthScreen>
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final primaryColor = Theme.of(context).primaryColor;
+    final surfaceColor = Theme.of(context).colorScheme.surface;
+    final textColor = Theme.of(context).colorScheme.onSurface;
+    final secondaryTextColor = isDark
+        ? Colors.grey.shade400
+        : Colors.grey.shade600;
 
     return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
             physics: const BouncingScrollPhysics(),
-            padding: const EdgeInsets.symmetric(horizontal: 28.0),
+            padding: const EdgeInsets.symmetric(horizontal: 24.0),
             child: FadeTransition(
               opacity: _fadeAnimation,
               child: SlideTransition(
                 position: _slideAnimation,
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const SizedBox(height: 40),
-
-                      // Logo with subtle animation
-                      Container(
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: primaryColor.withValues(alpha: 0.1),
-                          shape: BoxShape.circle,
+                child: Container(
+                  padding: const EdgeInsets.all(32),
+                  decoration: BoxDecoration(
+                    color: surfaceColor,
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(
+                      color: Theme.of(context).dividerColor
+                          .withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // App Logo
+                        Center(
+                          child: Container(
+                            height: 72,
+                            width: 72,
+                            decoration: BoxDecoration(
+                              color: primaryColor.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: primaryColor.withValues(alpha: 0.2),
+                              ),
+                            ),
+                            child: Icon(
+                              Icons.all_inclusive_rounded,
+                              size: 36,
+                              color: primaryColor,
+                            ),
+                          ),
                         ),
-                        child: Icon(
-                          Icons.account_balance_wallet_rounded,
-                          size: 72,
-                          color: primaryColor,
-                        ),
-                      ),
-                      const SizedBox(height: 20),
+                        const SizedBox(height: 28),
 
-                      // App Name
-                      Text(
-                        'Dongi',
-                        style: TextStyle(
-                          fontSize: 36,
-                          fontWeight: FontWeight.w800,
-                          color: isDark ? Colors.white : Colors.grey.shade900,
-                          letterSpacing: -0.5,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-
-                      // Subtitle with mode indicator
-                      AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 100),
-                        child: Text(
-                          _isLogin ? 'Welcome back!' : 'Create your account',
-                          key: ValueKey(_isLogin),
+                        // Title
+                        Text(
+                          'Dongi',
+                          textAlign: TextAlign.center,
                           style: TextStyle(
-                            fontSize: 15,
-                            color: Theme.of(context).textTheme.bodyMedium?.color
-                                ?.withValues(alpha: 0.7),
+                            fontSize: 30,
+                            fontWeight: FontWeight.w800,
+                            color: textColor,
+                            letterSpacing: -1,
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 48),
+                        const SizedBox(height: 6),
 
-                      // Username Field with modern styling
-                      _buildTextField(
-                        controller: _usernameController,
-                        label: 'Username',
-                        icon: Icons.person_outline_rounded,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter a username';
-                          }
-                          if (value.length < 3) {
-                            return 'Must be at least 3 characters';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Password Field
-                      _buildTextField(
-                        controller: _passwordController,
-                        label: 'Password',
-                        icon: Icons.lock_outline_rounded,
-                        obscureText: !_isPasswordVisible,
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            _isPasswordVisible
-                                ? Icons.visibility_off_outlined
-                                : Icons.visibility_outlined,
-                            color: Colors.grey.shade500,
-                          ),
-                          onPressed: () => setState(
-                            () => _isPasswordVisible = !_isPasswordVisible,
-                          ),
-                        ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter a password';
-                          }
-                          if (value.length < 6) {
-                            return 'Must be at least 6 characters';
-                          }
-                          return null;
-                        },
-                      ),
-
-                      const SizedBox(height: 28),
-
-                      // Submit Button with gradient
-                      Container(
-                        height: 56,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(16),
-                          gradient: LinearGradient(
-                            colors: [
-                              primaryColor,
-                              primaryColor.withValues(alpha: 0.8),
-                            ],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: primaryColor.withValues(alpha: 0.3),
-                              blurRadius: 12,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: ElevatedButton(
-                          onPressed: _isLoading ? null : _submitAuth,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.transparent,
-                            foregroundColor: Colors.white,
-                            shadowColor: Colors.transparent,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
+                        // Subtitle
+                        AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 200),
+                          child: Text(
+                            _isLogin
+                                ? 'Split expenses, seamlessly.'
+                                : 'Join the modern way to share.',
+                            key: ValueKey(_isLogin),
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w500,
+                              color: secondaryTextColor,
                             ),
                           ),
-                          child: _isLoading
-                              ? const SizedBox(
-                                  width: 24,
-                                  height: 24,
-                                  child: CircularProgressIndicator(
-                                    color: Colors.white,
-                                    strokeWidth: 2.5,
-                                  ),
-                                )
-                              : Text(
-                                  _isLogin ? 'Sign In' : 'Create Account',
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                    letterSpacing: 0.3,
-                                  ),
-                                ),
                         ),
-                      ),
-                      const SizedBox(height: 24),
+                        const SizedBox(height: 40),
 
-                      // Toggle with divider
-                      Row(
-                        children: [
-                          Expanded(child: Divider(color: Colors.grey.shade300)),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            child: Text(
-                              'OR',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey.shade500,
-                                fontWeight: FontWeight.w500,
+                        // Username Field
+                        _buildTextField(
+                          controller: _usernameController,
+                          label: 'Username',
+                          icon: Icons.alternate_email_rounded,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Username is required';
+                            }
+                            if (value.length < 3) {
+                              return 'Too short';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Password Field
+                        _buildTextField(
+                          controller: _passwordController,
+                          label: 'Password',
+                          icon: Icons.lock_outline_rounded,
+                          obscureText: !_isPasswordVisible,
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _isPasswordVisible
+                                  ? Icons.visibility_off_rounded
+                                  : Icons.visibility_rounded,
+                              color: secondaryTextColor,
+                            ),
+                            onPressed: () => setState(
+                                  () => _isPasswordVisible = !_isPasswordVisible,
+                            ),
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Password is required';
+                            }
+                            if (value.length < 6) {
+                              return 'At least 6 characters';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 28),
+
+                        // Action Button
+                        SizedBox(
+                          height: 56,
+                          child: ElevatedButton(
+                            onPressed: _isLoading ? null : _submitAuth,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: primaryColor,
+                              foregroundColor:
+                              Theme.of(context).colorScheme.onPrimary,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                            child: _isLoading
+                                ? SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(
+                                color:
+                                Theme.of(context).colorScheme.onPrimary,
+                                strokeWidth: 2.5,
+                              ),
+                            )
+                                : Text(
+                              _isLogin ? 'Sign In' : 'Create Account',
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 0.3,
                               ),
                             ),
                           ),
-                          Expanded(child: Divider(color: Colors.grey.shade300)),
-                        ],
-                      ),
-                      const SizedBox(height: 20),
-
-                      // Toggle Button
-                      TextButton.icon(
-                        onPressed: _isLoading ? null : _switchAuthMode,
-                        icon: Icon(
-                          _isLogin
-                              ? Icons.person_add_alt_1_outlined
-                              : Icons.login_outlined,
-                          size: 20,
                         ),
-                        label: Text(
-                          _isLogin
-                              ? "Don't have an account? Sign up"
-                              : "Already have an account? Sign in",
-                          style: TextStyle(
-                            color: primaryColor,
-                            fontWeight: FontWeight.w600,
+                        const SizedBox(height: 24),
+
+                        // Mode Toggle
+                        TextButton(
+                          onPressed: _isLoading ? null : _switchAuthMode,
+                          style: TextButton.styleFrom(
+                            foregroundColor: primaryColor,
+                            splashFactory: NoSplash.splashFactory,
+                          ),
+                          child: RichText(
+                            text: TextSpan(
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: secondaryTextColor,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              children: [
+                                TextSpan(
+                                  text: _isLogin
+                                      ? "Don't have an account? "
+                                      : "Already registered? ",
+                                ),
+                                TextSpan(
+                                  text: _isLogin ? "Sign up" : "Sign in",
+                                  style: TextStyle(
+                                    color: primaryColor,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 20),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -352,46 +359,59 @@ class _AuthScreenState extends State<AuthScreen>
       controller: controller,
       obscureText: obscureText,
       validator: validator,
-      style: const TextStyle(fontSize: 15),
+      style: TextStyle(
+        fontSize: 15,
+        fontWeight: FontWeight.w500,
+        color: Theme.of(context).colorScheme.onSurface,
+      ),
       decoration: InputDecoration(
         labelText: label,
         labelStyle: TextStyle(
-          color: Colors.grey.shade600,
+          color: Theme.of(context).brightness == Brightness.dark
+              ? Colors.grey.shade500
+              : Colors.grey.shade600,
           fontWeight: FontWeight.w500,
         ),
-        prefixIcon: Icon(icon, color: Colors.grey.shade500),
+        prefixIcon: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: Icon(icon,
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? Colors.grey.shade500
+                  : Colors.grey.shade500),
+        ),
         suffixIcon: suffixIcon,
         filled: true,
         fillColor: Theme.of(context).brightness == Brightness.dark
             ? Colors.grey.shade800
             : Colors.grey.shade100,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide.none,
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(
+            color: Theme.of(context).dividerColor.withValues(alpha: 0.3),
+          ),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: Colors.grey.shade200, width: 1),
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(
+            color: Theme.of(context).dividerColor.withValues(alpha: 0.3),
+          ),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide(
             color: Theme.of(context).primaryColor,
-            width: 2,
+            width: 1.5,
           ),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: Colors.red, width: 1.5),
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: Color(0xFFE63946), width: 1),
         ),
         focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: Colors.red, width: 2),
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: Color(0xFFE63946), width: 1.5),
         ),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 16,
-        ),
+        contentPadding: const EdgeInsets.symmetric(vertical: 18),
       ),
     );
   }

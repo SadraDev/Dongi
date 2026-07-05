@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../services/friend_service.dart';
 import '../../services/group_service.dart';
 
@@ -13,9 +14,8 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
   final TextEditingController _nameController = TextEditingController();
   bool _isLoading = false;
 
-  // 1. Change from static list to dynamic list
   List<dynamic> _availableFriends = [];
-  bool _isFetchingFriends = true; // Added loading state for the list
+  bool _isFetchingFriends = true;
 
   final Set<String> _selectedFriends = {};
 
@@ -25,7 +25,6 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
     _fetchFriendsFromBackend();
   }
 
-  // 2. Fetch the real list
   Future<void> _fetchFriendsFromBackend() async {
     try {
       final friends = await FriendService.getFriends();
@@ -35,9 +34,14 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
       });
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Failed to load friends: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to load friends: $e'),
+            behavior: SnackBarBehavior.floating,
+            elevation: 0,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        );
       }
     }
   }
@@ -53,14 +57,22 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
 
     if (groupName.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a group name')),
+        const SnackBar(
+          content: Text('Please enter a group name'),
+          behavior: SnackBarBehavior.floating,
+          elevation: 0,
+        ),
       );
       return;
     }
 
     if (_selectedFriends.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select at least one friend')),
+        const SnackBar(
+          content: Text('Please select at least one friend'),
+          behavior: SnackBarBehavior.floating,
+          elevation: 0,
+        ),
       );
       return;
     }
@@ -68,23 +80,31 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
     setState(() => _isLoading = true);
 
     try {
-      // Calling the service we defined earlier
       await GroupService.createGroup(groupName, _selectedFriends.toList());
 
       if (mounted) {
+        HapticFeedback.mediumImpact();
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Text('Group created successfully!'),
             backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+            elevation: 0,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
         );
-        // Pop with 'true' to signal to the HomeScreen that it needs to refresh
         Navigator.pop(context, true);
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: Colors.red.shade700,
+            behavior: SnackBarBehavior.floating,
+            elevation: 0,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
         );
       }
     } finally {
@@ -94,38 +114,35 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('New Group'),
+        title: const Text('New Group',
+            style: TextStyle(fontWeight: FontWeight.w700)),
+        elevation: 0,
         actions: [
-          // This is the button that triggers the creation logic
           _isLoading
               ? const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16.0),
-                  child: Center(
-                    child: SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        color: Colors.white,
-                        strokeWidth: 2,
-                      ),
-                    ),
-                  ),
-                )
+            padding: EdgeInsets.symmetric(horizontal: 16.0),
+            child: Center(
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            ),
+          )
               : TextButton(
-                  onPressed: _createGroup,
-                  style: TextButton.styleFrom(
-                    foregroundColor:
-                        Theme.of(context).brightness == Brightness.light
-                        ? Colors.white
-                        : Colors.white,
-                  ),
-                  child: const Text(
-                    'Create',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                  ),
-                ),
+            onPressed: _createGroup,
+            child: const Text(
+              'Create',
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 15,
+              ),
+            ),
+          ),
         ],
       ),
       body: Padding(
@@ -133,135 +150,247 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // TextField stays the same
+            // Group Name Input
             TextField(
               controller: _nameController,
               decoration: InputDecoration(
                 labelText: 'Group Name',
-                prefixIcon: const Icon(Icons.group),
+                prefixIcon: const Icon(Icons.group_rounded, size: 20),
+                filled: true,
+                fillColor: isDark ? Colors.grey.shade800 : Colors.grey.shade100,
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide(
+                    color: Theme.of(context).dividerColor.withValues(alpha: 0.3),
+                  ),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide(
+                    color: Theme.of(context).dividerColor.withValues(alpha: 0.3),
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide(
+                    color: Theme.of(context).primaryColor,
+                    width: 1.5,
+                  ),
                 ),
               ),
             ),
             const SizedBox(height: 24),
-            const Text(
+
+            // Section header
+            Text(
               'Add Members',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+              ),
             ),
 
-            // 3. Conditional rendering for the friends list
+            // Friends List
             Expanded(
               child: _isFetchingFriends
                   ? const Center(child: CircularProgressIndicator())
                   : _availableFriends.isEmpty
-                  ? const Center(
-                      child: Text("No friends found. Add some first!"),
-                    )
+                  ? _buildNoFriendsState()
                   : ListView.builder(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      itemCount: _availableFriends.length,
-                      itemBuilder: (context, index) {
-                        final friendUsername =
-                            _availableFriends[index]['username'];
-                        final isSelected = _selectedFriends.contains(
-                          friendUsername,
-                        );
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                itemCount: _availableFriends.length,
+                itemBuilder: (context, index) {
+                  final friendUsername =
+                  _availableFriends[index]['username'];
+                  final isSelected =
+                  _selectedFriends.contains(friendUsername);
 
-                        return AnimatedContainer(
-                          duration: const Duration(
-                            milliseconds: 250,
-                          ), // Smooth transition
-                          margin: const EdgeInsets.only(bottom: 12),
-                          decoration: BoxDecoration(
-                            color: isSelected
-                                ? Theme.of(
-                                    context,
-                                  ).primaryColor.withValues(alpha: 0.1)
-                                : Theme.of(context).cardColor,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: isSelected
-                                  ? Theme.of(context).primaryColor
-                                  : Theme.of(
-                                      context,
-                                    ).dividerColor.withValues(alpha: 0.2),
-                              width: isSelected ? 2.5 : 1.5,
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 250),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? Theme.of(context)
+                            .primaryColor
+                            .withValues(alpha: 0.1)
+                            : Theme.of(context).colorScheme.surface,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: isSelected
+                              ? Theme.of(context).primaryColor
+                              : Theme.of(context)
+                              .dividerColor
+                              .withValues(alpha: 0.3),
+                          width: isSelected ? 1.5 : 1,
+                        ),
+                      ),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(16),
+                          onTap: () {
+                            HapticFeedback.lightImpact();
+                            setState(() {
+                              if (isSelected) {
+                                _selectedFriends.remove(friendUsername);
+                              } else {
+                                _selectedFriends.add(friendUsername);
+                              }
+                            });
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 14,
                             ),
-                            boxShadow: isSelected
-                                ? [
-                                    BoxShadow(
-                                      color: Theme.of(
-                                        context,
-                                      ).primaryColor.withValues(alpha: 0.2),
-                                      blurRadius: 8,
-                                      offset: const Offset(0, 4),
-                                    ),
-                                  ]
-                                : [],
-                          ),
-                          child: InkWell(
-                            borderRadius: BorderRadius.circular(16),
-                            onTap: () {
-                              setState(() {
-                                if (isSelected) {
-                                  _selectedFriends.remove(friendUsername);
-                                } else {
-                                  _selectedFriends.add(friendUsername);
-                                }
-                              });
-                            },
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 20,
-                                vertical: 16,
-                              ),
-                              child: Row(
-                                children: [
-                                  CircleAvatar(
-                                    backgroundColor: isSelected
+                            child: Row(
+                              children: [
+                                // Selection Indicator
+                                AnimatedContainer(
+                                  duration:
+                                  const Duration(milliseconds: 250),
+                                  width: 24,
+                                  height: 24,
+                                  decoration: BoxDecoration(
+                                    color: isSelected
                                         ? Theme.of(context).primaryColor
-                                        : Theme.of(
-                                            context,
-                                          ).dividerColor.withValues(alpha: 0.2),
-                                    child: Icon(
-                                      isSelected
-                                          ? Icons.check
-                                          : Icons.person_outline,
+                                        : Colors.transparent,
+                                    borderRadius:
+                                    BorderRadius.circular(8),
+                                    border: Border.all(
                                       color: isSelected
-                                          ? Colors.white
-                                          : Theme.of(context).iconTheme.color,
+                                          ? Theme.of(context).primaryColor
+                                          : (isDark
+                                          ? Colors.grey.shade600
+                                          : Colors.grey.shade400),
+                                      width: 1.5,
                                     ),
                                   ),
-                                  const SizedBox(width: 16),
-                                  Text(
+                                  alignment: Alignment.center,
+                                  child: isSelected
+                                      ? Icon(Icons.check_rounded,
+                                      size: 16,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onPrimary)
+                                      : null,
+                                ),
+                                const SizedBox(width: 14),
+                                // Avatar
+                                Container(
+                                  width: 40,
+                                  height: 40,
+                                  decoration: BoxDecoration(
+                                    color: isSelected
+                                        ? Theme.of(context)
+                                        .primaryColor
+                                        .withValues(alpha: 0.15)
+                                        : (isDark
+                                        ? Colors.grey.shade800
+                                        : Colors.grey.shade100),
+                                    borderRadius:
+                                    BorderRadius.circular(12),
+                                  ),
+                                  alignment: Alignment.center,
+                                  child: Text(
+                                    friendUsername[0].toUpperCase(),
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                      color: isSelected
+                                          ? Theme.of(context).primaryColor
+                                          : (isDark
+                                          ? Colors.grey.shade400
+                                          : Colors.grey.shade600),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                // Name
+                                Expanded(
+                                  child: Text(
                                     friendUsername,
                                     style: TextStyle(
-                                      fontSize: 16,
+                                      fontSize: 15,
                                       fontWeight: isSelected
-                                          ? FontWeight.bold
+                                          ? FontWeight.w700
                                           : FontWeight.w500,
                                       color: isSelected
                                           ? Theme.of(context).primaryColor
-                                          : null,
+                                          : Theme.of(context)
+                                          .colorScheme
+                                          .onSurface,
                                     ),
                                   ),
-                                  const Spacer(),
-                                  if (isSelected)
-                                    Icon(
-                                      Icons.check_circle,
-                                      color: Theme.of(context).primaryColor,
-                                    ),
-                                ],
-                              ),
+                                ),
+                                // Check icon
+                                if (isSelected)
+                                  Icon(
+                                    Icons.check_circle_rounded,
+                                    color: Theme.of(context).primaryColor,
+                                    size: 22,
+                                  ),
+                              ],
                             ),
                           ),
-                        );
-                      },
+                        ),
+                      ),
                     ),
+                  );
+                },
+              ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildNoFriendsState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? Colors.grey.shade800
+                  : Colors.grey.shade100,
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: Theme.of(context).dividerColor.withValues(alpha: 0.3),
+              ),
+            ),
+            child: Icon(
+              Icons.person_add_disabled_rounded,
+              size: 40,
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? Colors.grey.shade600
+                  : Colors.grey.shade400,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'No friends found',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Add some friends first!',
+            style: TextStyle(
+              fontSize: 14,
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? Colors.grey.shade500
+                  : Colors.grey.shade500,
+            ),
+          ),
+        ],
       ),
     );
   }

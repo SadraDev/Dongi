@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../main.dart';
 import '../../models/group_model.dart';
 import '../../services/group_service.dart';
@@ -62,7 +63,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _handleLogout() async {
-    // Show a confirmation dialog before logging out
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -79,6 +79,7 @@ class _HomeScreenState extends State<HomeScreen> {
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red.shade600,
               foregroundColor: Colors.white,
+              elevation: 0,
             ),
             child: const Text('Logout'),
           ),
@@ -91,10 +92,34 @@ class _HomeScreenState extends State<HomeScreen> {
       if (mounted) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const AuthScreen()),
+          PageRouteBuilder(
+            pageBuilder: (context, animation, secondaryAnimation) =>
+            const AuthScreen(),
+            transitionsBuilder:
+                (context, animation, secondaryAnimation, child) {
+              return FadeTransition(opacity: animation, child: child);
+            },
+            transitionDuration: const Duration(milliseconds: 100),
+          ),
         );
       }
     }
+  }
+
+  String _getGreeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) return 'Good morning';
+    if (hour < 17) return 'Good afternoon';
+    return 'Good evening';
+  }
+
+  String _getFormattedDate() {
+    final now = DateTime.now();
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
+    return '${months[now.month - 1]} ${now.day}, ${now.year}';
   }
 
   @override
@@ -102,8 +127,8 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          _currentUsername!,
-          style: TextStyle(fontWeight: FontWeight.w800, fontSize: 22),
+          _currentUsername ?? '',
+          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 22),
         ),
         elevation: 0,
         actions: [
@@ -112,9 +137,18 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: const Icon(Icons.people_alt_outlined),
             tooltip: 'Friends',
             onPressed: () {
+              HapticFeedback.lightImpact();
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const FriendsScreen()),
+                PageRouteBuilder(
+                  pageBuilder: (context, animation, secondaryAnimation) =>
+                  const FriendsScreen(),
+                  transitionsBuilder:
+                      (context, animation, secondaryAnimation, child) {
+                    return FadeTransition(opacity: animation, child: child);
+                  },
+                  transitionDuration: const Duration(milliseconds: 100),
+                ),
               );
             },
           ),
@@ -125,9 +159,9 @@ class _HomeScreenState extends State<HomeScreen> {
             builder: (context, currentMode, _) {
               final bool isCurrentlyDark =
                   currentMode == ThemeMode.dark ||
-                  (currentMode == ThemeMode.system &&
-                      MediaQuery.platformBrightnessOf(context) ==
-                          Brightness.dark);
+                      (currentMode == ThemeMode.system &&
+                          MediaQuery.platformBrightnessOf(context) ==
+                              Brightness.dark);
 
               return IconButton(
                 icon: Icon(
@@ -137,6 +171,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 tooltip: 'Toggle Theme',
                 onPressed: () {
+                  HapticFeedback.lightImpact();
                   themeNotifier.value = isCurrentlyDark
                       ? ThemeMode.light
                       : ThemeMode.dark;
@@ -154,10 +189,17 @@ class _HomeScreenState extends State<HomeScreen> {
               icon: const Icon(Icons.notifications_none_rounded),
               tooltip: 'Notifications',
               onPressed: () async {
+                HapticFeedback.lightImpact();
                 await Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (context) => const NotificationsScreen(),
+                  PageRouteBuilder(
+                    pageBuilder: (context, animation, secondaryAnimation) =>
+                    const NotificationsScreen(),
+                    transitionsBuilder:
+                        (context, animation, secondaryAnimation, child) {
+                      return FadeTransition(opacity: animation, child: child);
+                    },
+                    transitionDuration: const Duration(milliseconds: 100),
                   ),
                 );
                 _loadUnreadCount();
@@ -166,47 +208,47 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
 
           // Logout Menu
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert_rounded),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+          IconButton(
+            icon: const Icon(
+              Icons.logout_rounded,
+              color: Colors.red,
             ),
-            onSelected: (value) {
-              if (value == 'logout') _handleLogout();
-            },
-            itemBuilder: (context) => [
-              const PopupMenuItem(
-                value: 'logout',
-                child: Row(
-                  children: [
-                    Icon(Icons.logout_rounded, color: Colors.red),
-                    SizedBox(width: 12),
-                    Text('Logout', style: TextStyle(color: Colors.red)),
-                  ],
-                ),
-              ),
-            ],
+            tooltip: 'Logout',
+            onPressed: _handleLogout,
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 4),
         ],
       ),
-      body: RefreshIndicator(
-        color: Theme.of(context).primaryColor,
-        onRefresh: _refreshData,
-        child: _buildGroupList(context),
-      ),
+      body: _buildBody(),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {
+          HapticFeedback.lightImpact();
           final result = await Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => const CreateGroupScreen()),
+            PageRouteBuilder(
+              pageBuilder: (context, animation, secondaryAnimation) =>
+              const CreateGroupScreen(),
+              transitionsBuilder:
+                  (context, animation, secondaryAnimation, child) {
+                return FadeTransition(opacity: animation, child: child);
+              },
+              transitionDuration: const Duration(milliseconds: 100),
+            ),
           );
           if (result == true) _refreshData();
         },
         icon: const Icon(Icons.group_add_rounded),
         label: const Text('New Group'),
-        elevation: 4,
+        elevation: 0,
       ),
+    );
+  }
+
+  Widget _buildBody() {
+    return RefreshIndicator(
+      color: Theme.of(context).primaryColor,
+      onRefresh: _refreshData,
+      child: _buildGroupList(context),
     );
   }
 
@@ -224,19 +266,48 @@ class _HomeScreenState extends State<HomeScreen> {
 
         final groups = snapshot.data!;
 
-        // Calculate totals for the header card (SAME LOGIC)
-        double totalOwed = groups
-            .where((g) => g.balance > 0)
-            .fold(0, (sum, g) => sum + g.balance);
-        double totalOwe = groups
-            .where((g) => g.balance < 0)
-            .fold(0, (sum, g) => sum + g.balance.abs());
+        double totalOwed = 0;
+        double totalOwe = 0;
+        for (final group in groups) {
+          totalOwed += group.totalOwed;
+          totalOwe += group.totalOwe;
+        }
 
         return CustomScrollView(
-          physics:
-              const AlwaysScrollableScrollPhysics(), // Required for RefreshIndicator to work
+          physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
-            // 1. Top Summary Card
+            // Sliver 1: Greeting Header
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 4),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${_getGreeting()}, ${_currentUsername ?? ''}',
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w600,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      _getFormattedDate(),
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? Colors.grey.shade500
+                            : Colors.grey.shade500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            // Sliver 2: Cumulative Balance Card
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
@@ -247,23 +318,29 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
 
-            // 2. Section Header
-            const SliverToBoxAdapter(
+            // Sliver 3: "Your Groups" header
+            SliverToBoxAdapter(
               child: Padding(
-                padding: EdgeInsets.fromLTRB(20, 16, 20, 8),
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
                 child: Text(
                   'Your Groups',
-                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 15,
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.grey.shade400
+                        : Colors.grey.shade600,
+                  ),
                 ),
               ),
             ),
 
-            // 3. Group Cards List
+            // Sliver 4: Group Cards List
             SliverPadding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               sliver: SliverList(
                 delegate: SliverChildBuilderDelegate(
-                  (context, index) => _buildGroupCard(groups[index]),
+                      (context, index) => _buildGroupCard(groups[index]),
                   childCount: groups.length,
                 ),
               ),
@@ -277,64 +354,79 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // --- Modern Group Card ---
   Widget _buildGroupCard(Group group) {
-    // Determine colors and text based on balance (SAME LOGIC)
     final bool isZero = group.balance == 0;
     final bool isPositive = group.balance > 0;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    String balanceText = isZero
-        ? 'Settled up'
-        : (isPositive ? 'You are owed' : 'You owe');
+    String balanceText =
+    isZero ? 'Settled' : (isPositive ? 'You are owed' : 'You owe');
 
     Color balanceColor = isZero
-        ? Colors.grey
-        : (isPositive ? Colors.green.shade600 : Colors.red.shade600);
+        ? (isDark ? Colors.grey.shade500 : Colors.grey.shade400)
+        : (isPositive ? Colors.green.shade600 : Colors.red.shade400);
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Card(
-        margin: EdgeInsets.zero, // Padding is handled by SliverPadding
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Material(
+        color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
-          onTap: () async {
-            final bool? groupDeleted = await Navigator.push(
+          onTap: () {
+            HapticFeedback.lightImpact();
+            Navigator.push(
               context,
-              MaterialPageRoute(
-                builder: (context) => GroupScreen(
-                  groupId: group.id,
-                  groupName: group.name,
-                  createdById: group.createdBy,
-                  currentUserId: _currentUserId,
-                ),
+              PageRouteBuilder(
+                pageBuilder: (context, animation, secondaryAnimation) =>
+                    GroupScreen(
+                      groupId: group.id,
+                      groupName: group.name,
+                      createdById: group.createdBy,
+                      currentUserId: _currentUserId,
+                    ),
+                transitionsBuilder:
+                    (context, animation, secondaryAnimation, child) {
+                  return FadeTransition(opacity: animation, child: child);
+                },
+                transitionDuration: const Duration(milliseconds: 100),
               ),
-            );
-
-            if (groupDeleted == true) {
-              _refreshData();
-            }
+            ).then((groupDeleted) {
+              if (groupDeleted == true) {
+                _refreshData();
+              }
+            });
           },
-          child: Padding(
+          child: Container(
             padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: Theme.of(context).dividerColor.withValues(alpha: 0.3),
+              ),
+            ),
             child: Row(
               children: [
                 // Group Icon
                 Container(
-                  width: 50,
-                  height: 50,
+                  width: 48,
+                  height: 48,
                   decoration: BoxDecoration(
-                    color: Theme.of(
-                      context,
-                    ).primaryColor.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(14),
+                    color: Theme.of(context).primaryColor
+                        .withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Theme.of(context).primaryColor
+                          .withValues(alpha: 0.15),
+                    ),
                   ),
                   child: Icon(
                     Icons.groups_rounded,
                     color: Theme.of(context).primaryColor,
-                    size: 26,
+                    size: 24,
                   ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 14),
 
                 // Group Info
                 Expanded(
@@ -343,14 +435,15 @@ class _HomeScreenState extends State<HomeScreen> {
                     children: [
                       Text(
                         group.name,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontWeight: FontWeight.w600,
-                          fontSize: 16,
+                          fontSize: 15,
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 3),
                       Text(
                         balanceText,
                         style: TextStyle(
@@ -363,22 +456,27 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
 
-                // Balance Amount Badge
+                // Balance Badge
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 8,
+                    horizontal: 12,
+                    vertical: 6,
                   ),
                   decoration: BoxDecoration(
                     color: balanceColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: balanceColor.withValues(alpha: 0.2),
+                    ),
                   ),
                   child: Text(
-                    isZero ? 'Ŧ0' : 'Ŧ${group.balance.abs().toInt()}',
+                    isZero
+                        ? 'Settled'
+                        : '${isPositive ? '+' : '-'}Ŧ${group.balance.abs().toStringAsFixed(group.balance.abs() == group.balance.abs().toInt() ? 0 : 2)}',
                     style: TextStyle(
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w700,
                       color: balanceColor,
-                      fontSize: 15,
+                      fontSize: 14,
                     ),
                   ),
                 ),
@@ -390,12 +488,11 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // --- Empty State ---
   Widget _buildEmptyState() {
     return ListView(
       children: [
         SizedBox(
-          height: MediaQuery.of(context).size.height * 0.5,
+          height: MediaQuery.of(context).size.height * 0.45,
           child: Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -403,17 +500,19 @@ class _HomeScreenState extends State<HomeScreen> {
                 Container(
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
-                    color: Theme.of(
-                      context,
-                    ).primaryColor.withValues(alpha: 0.1),
+                    color: Theme.of(context).primaryColor
+                        .withValues(alpha: 0.08),
                     shape: BoxShape.circle,
+                    border: Border.all(
+                      color: Theme.of(context).primaryColor
+                          .withValues(alpha: 0.15),
+                    ),
                   ),
                   child: Icon(
                     Icons.group_add_rounded,
-                    size: 56,
-                    color: Theme.of(
-                      context,
-                    ).primaryColor.withValues(alpha: 0.6),
+                    size: 48,
+                    color: Theme.of(context).primaryColor
+                        .withValues(alpha: 0.5),
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -422,7 +521,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
-                    color: Theme.of(context).textTheme.bodyLarge?.color,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -431,7 +530,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 14,
-                    color: Colors.grey.shade500,
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.grey.shade500
+                        : Colors.grey.shade500,
                     height: 1.4,
                   ),
                 ),
@@ -443,7 +544,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // --- Error State ---
   Widget _buildErrorState(String error) {
     return Center(
       child: Padding(
@@ -456,27 +556,35 @@ class _HomeScreenState extends State<HomeScreen> {
               decoration: BoxDecoration(
                 color: Colors.red.shade50,
                 shape: BoxShape.circle,
+                border: Border.all(
+                  color: Colors.red.shade200,
+                ),
               ),
               child: Icon(
                 Icons.error_outline_rounded,
-                size: 48,
+                size: 44,
                 color: Colors.red.shade300,
               ),
             ),
             const SizedBox(height: 20),
             Text(
-              'Something went wrong',
+              'Session expired',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
-                color: Theme.of(context).textTheme.bodyLarge?.color,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: 8),
             Text(
-              error,
+              'Your session has expired. Please log in again.',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
+              style: TextStyle(
+                fontSize: 13,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.grey.shade500
+                    : Colors.grey.shade500,
+              ),
             ),
             const SizedBox(height: 24),
             ElevatedButton.icon(
@@ -485,12 +593,30 @@ class _HomeScreenState extends State<HomeScreen> {
                 if (mounted) {
                   Navigator.pushReplacement(
                     context,
-                    MaterialPageRoute(builder: (context) => const AuthScreen()),
+                    PageRouteBuilder(
+                      pageBuilder: (context, animation, secondaryAnimation) =>
+                      const AuthScreen(),
+                      transitionsBuilder:
+                          (context, animation, secondaryAnimation, child) {
+                        return FadeTransition(opacity: animation, child: child);
+                      },
+                      transitionDuration: const Duration(milliseconds: 100),
+                    ),
                   );
                 }
               },
-              icon: const Icon(Icons.logout),
+              icon: const Icon(Icons.logout, size: 18),
               label: const Text('Log out'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red.shade600,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                padding:
+                const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
             ),
           ],
         ),

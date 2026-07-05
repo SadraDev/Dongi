@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../services/group_service.dart';
 import 'add_payment.dart';
 import '../../services/notification_service.dart';
@@ -80,6 +81,9 @@ class _GroupScreenState extends State<GroupScreen> {
               backgroundColor: Colors.red.shade600,
               foregroundColor: Colors.white,
               elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
             child: const Text('Delete'),
           ),
@@ -93,6 +97,7 @@ class _GroupScreenState extends State<GroupScreen> {
         barrierDismissible: false,
         builder: (_) => const Center(
           child: Card(
+            elevation: 0,
             child: Padding(
               padding: EdgeInsets.all(24),
               child: CircularProgressIndicator(),
@@ -105,13 +110,15 @@ class _GroupScreenState extends State<GroupScreen> {
         await GroupService.deleteGroup(widget.groupId);
 
         if (mounted) {
-          Navigator.pop(context); // Pop loading
-          Navigator.pop(context, true); // Pop screen, signal refresh
+          Navigator.pop(context);
+          Navigator.pop(context, true);
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
+            SnackBar(
               content: Text('Group deleted successfully'),
               backgroundColor: Colors.green,
               behavior: SnackBarBehavior.floating,
+              elevation: 0,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
           );
         }
@@ -123,6 +130,8 @@ class _GroupScreenState extends State<GroupScreen> {
               content: Text('Error: $e'),
               backgroundColor: Colors.red.shade700,
               behavior: SnackBarBehavior.floating,
+              elevation: 0,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
           );
         }
@@ -159,18 +168,32 @@ class _GroupScreenState extends State<GroupScreen> {
                       hintText: 'e.g., johndoe',
                       prefixIcon: const Icon(Icons.person_outline_rounded),
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      filled: true,
+                      fillColor: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.grey.shade800
+                          : Colors.grey.shade100,
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide(
+                          color: Theme.of(context).dividerColor.withValues(alpha: 0.3),
+                        ),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide(
+                          color: Theme.of(context).primaryColor,
+                          width: 1.5,
+                        ),
                       ),
                     ),
                     enabled: !isInviting,
                     onSubmitted: (_) {
                       if (!isInviting) {
                         _performInvite(
-                          ctx,
-                          usernameController,
-                          setState,
-                          () => isInviting = true,
-                          (val) => isInviting = val,
+                          ctx, usernameController, setState,
+                              () => isInviting, (val) => isInviting = val,
                         );
                       }
                     },
@@ -186,28 +209,24 @@ class _GroupScreenState extends State<GroupScreen> {
                   onPressed: isInviting
                       ? null
                       : () {
-                          _performInvite(
-                            ctx,
-                            usernameController,
-                            setState,
-                            () => isInviting = true,
-                            (val) => isInviting = val,
-                          );
-                        },
+                    _performInvite(
+                      ctx, usernameController, setState,
+                          () => isInviting, (val) => isInviting = val,
+                    );
+                  },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Theme.of(context).primaryColor,
-                    foregroundColor: Colors.white,
+                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
                     elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                   child: isInviting
                       ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
+                    width: 20, height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                  )
                       : const Text('Invite'),
                 ),
               ],
@@ -218,20 +237,20 @@ class _GroupScreenState extends State<GroupScreen> {
     );
   }
 
-  // Extracted invite logic to handle both button press and enter key
   void _performInvite(
-    BuildContext ctx,
-    TextEditingController controller,
-    StateSetter setState,
-    bool Function() getInviting,
-    void Function(bool) setInviting,
-  ) async {
+      BuildContext ctx,
+      TextEditingController controller,
+      StateSetter setState,
+      bool Function() getInviting,
+      void Function(bool) setInviting,
+      ) async {
     final username = controller.text.trim();
     if (username.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please enter a username'),
           behavior: SnackBarBehavior.floating,
+          elevation: 0,
         ),
       );
       return;
@@ -247,13 +266,15 @@ class _GroupScreenState extends State<GroupScreen> {
           SnackBar(
             content: Row(
               children: [
-                Icon(Icons.error_outline, color: Colors.white),
+                Icon(Icons.check_circle_outline, color: Colors.white),
                 SizedBox(width: 12),
                 Text('Invitation sent to $username!'),
               ],
             ),
             backgroundColor: Colors.green.shade600,
             behavior: SnackBarBehavior.floating,
+            elevation: 0,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
         );
         _fetchGroupData();
@@ -261,13 +282,7 @@ class _GroupScreenState extends State<GroupScreen> {
     } catch (e) {
       setState(() => setInviting(false));
       if (context.mounted) {
-        // 1. Extract the clean error message without the "Exception: " prefix
-        final String errorMessage = e.toString().replaceFirst(
-          'Exception: ',
-          '',
-        );
-
-        // 2. Determine the color based on the message
+        final String errorMessage = e.toString().replaceFirst('Exception: ', '');
         final Color snackBarColor = errorMessage == 'User does not exist'
             ? Colors.red.shade700
             : Colors.orange.shade700;
@@ -277,16 +292,15 @@ class _GroupScreenState extends State<GroupScreen> {
           SnackBar(
             content: Row(
               children: [
-                const Icon(Icons.error_outline, color: Colors.white),
-                const SizedBox(width: 12),
+                Icon(Icons.error_outline, color: Colors.white),
+                SizedBox(width: 12),
                 Expanded(child: Text(errorMessage)),
               ],
             ),
             backgroundColor: snackBarColor,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
+            elevation: 0,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           ),
         );
@@ -302,6 +316,7 @@ class _GroupScreenState extends State<GroupScreen> {
           widget.groupName,
           style: const TextStyle(fontWeight: FontWeight.w700),
         ),
+        elevation: 0,
         actions: [
           PopupMenuButton<String>(
             tooltip: 'More Options',
@@ -309,7 +324,9 @@ class _GroupScreenState extends State<GroupScreen> {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),
+            elevation: 0,
             onSelected: (value) {
+              HapticFeedback.lightImpact();
               if (value == 'delete') {
                 _confirmDelete(context);
               } else if (value == 'invite') {
@@ -323,10 +340,7 @@ class _GroupScreenState extends State<GroupScreen> {
                   children: [
                     Icon(Icons.person_add_alt_1_rounded, size: 20),
                     SizedBox(width: 12),
-                    Text(
-                      'Invite Friend',
-                      style: TextStyle(fontWeight: FontWeight.w500),
-                    ),
+                    Text('Invite Friend', style: TextStyle(fontWeight: FontWeight.w500)),
                   ],
                 ),
               ),
@@ -335,19 +349,9 @@ class _GroupScreenState extends State<GroupScreen> {
                   value: 'delete',
                   child: Row(
                     children: [
-                      Icon(
-                        Icons.delete_outline_rounded,
-                        color: Colors.red,
-                        size: 20,
-                      ),
+                      Icon(Icons.delete_outline_rounded, color: Colors.red, size: 20),
                       SizedBox(width: 12),
-                      Text(
-                        'Delete Group',
-                        style: TextStyle(
-                          color: Colors.red,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
+                      Text('Delete Group', style: TextStyle(color: Colors.red, fontWeight: FontWeight.w500)),
                     ],
                   ),
                 ),
@@ -360,27 +364,37 @@ class _GroupScreenState extends State<GroupScreen> {
           : _errorMessage != null
           ? _buildErrorState()
           : RefreshIndicator(
-              color: Theme.of(context).primaryColor,
-              onRefresh: _fetchGroupData,
-              child: Column(
-                children: [
-                  _buildBalancesHeader(),
-                  const Divider(height: 1),
-                  Expanded(child: _buildExpensesList()),
-                ],
-              ),
+        color: Theme.of(context).primaryColor,
+        onRefresh: _fetchGroupData,
+        child: Column(
+          children: [
+            _buildBalancesHeader(),
+            Container(
+              height: 1,
+              color: Theme.of(context).dividerColor.withValues(alpha: 0.3),
             ),
+            Expanded(child: _buildExpensesList()),
+          ],
+        ),
+      ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {
+          HapticFeedback.lightImpact();
           final result = await Navigator.push(
             context,
-            MaterialPageRoute(
-              builder: (context) => AddPaymentScreen(
-                groupId: widget.groupId,
-                groupName: widget.groupName,
-                members: _memberBalances,
-                currentUserId: widget.currentUserId,
-              ),
+            PageRouteBuilder(
+              pageBuilder: (context, animation, secondaryAnimation) =>
+                  AddPaymentScreen(
+                    groupId: widget.groupId,
+                    groupName: widget.groupName,
+                    members: _memberBalances,
+                    currentUserId: widget.currentUserId,
+                  ),
+              transitionsBuilder:
+                  (context, animation, secondaryAnimation, child) {
+                return FadeTransition(opacity: animation, child: child);
+              },
+              transitionDuration: const Duration(milliseconds: 300),
               fullscreenDialog: true,
             ),
           );
@@ -390,7 +404,7 @@ class _GroupScreenState extends State<GroupScreen> {
         },
         icon: const Icon(Icons.add_rounded),
         label: const Text('Add Expense'),
-        elevation: 4,
+        elevation: 0,
       ),
     );
   }
@@ -407,12 +421,9 @@ class _GroupScreenState extends State<GroupScreen> {
               decoration: BoxDecoration(
                 color: Colors.red.shade50,
                 shape: BoxShape.circle,
+                border: Border.all(color: Colors.red.shade200),
               ),
-              child: Icon(
-                Icons.error_outline_rounded,
-                size: 48,
-                color: Colors.red.shade300,
-              ),
+              child: Icon(Icons.error_outline_rounded, size: 44, color: Colors.red.shade300),
             ),
             const SizedBox(height: 20),
             Text(
@@ -420,14 +431,18 @@ class _GroupScreenState extends State<GroupScreen> {
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
-                color: Theme.of(context).textTheme.bodyLarge?.color,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: 24),
             ElevatedButton.icon(
               onPressed: _fetchGroupData,
-              icon: const Icon(Icons.refresh_rounded),
+              icon: const Icon(Icons.refresh_rounded, size: 18),
               label: const Text('Retry'),
+              style: ElevatedButton.styleFrom(
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+              ),
             ),
           ],
         ),
@@ -451,60 +466,63 @@ class _GroupScreenState extends State<GroupScreen> {
         itemCount: _memberBalances.length,
         itemBuilder: (context, index) {
           final member = _memberBalances[index];
-
           final String name = member['name'] ?? 'Unknown';
           final double balance = (member['balance'] ?? 0).toDouble();
           final String status = member['status'] ?? 'pending';
           final bool isPending = status == 'pending';
-
-          // Dynamic Colors
-          final Color backgroundColor = isPending
-              ? Theme.of(context).scaffoldBackgroundColor
-              : Theme.of(context).cardColor;
+          final isDark = Theme.of(context).brightness == Brightness.dark;
 
           final Color balanceColor = isPending
               ? Colors.orange
               : balance == 0
-              ? Colors.grey
-              : (balance > 0 ? Colors.green.shade600 : Colors.red.shade600);
+              ? (isDark ? Colors.grey.shade500 : Colors.grey.shade400)
+              : (balance > 0 ? Colors.green.shade600 : Colors.red.shade400);
 
           final String balanceText = isPending
               ? 'Pending'
               : balance == 0
               ? 'Settled'
-              : '${balance > 0 ? '+' : ''}${balance.toInt()}Ŧ';
+              : '${balance > 0 ? '+' : ''}${balance.toInt()}T';
 
           return Container(
-            width: 140,
+            width: 130,
             margin: const EdgeInsets.symmetric(horizontal: 4.0),
             padding: const EdgeInsets.all(10.0),
             decoration: BoxDecoration(
-              color: backgroundColor,
+              color: Theme.of(context).colorScheme.surface,
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
                 color: isPending
                     ? Colors.orange.withValues(alpha: 0.3)
-                    : Theme.of(context).dividerColor.withValues(alpha: 0.4),
+                    : Theme.of(context).dividerColor.withValues(alpha: 0.3),
               ),
             ),
             child: Row(
               children: [
-                // Avatar Circle
-                CircleAvatar(
-                  radius: 18,
-                  backgroundColor: isPending
-                      ? Colors.orange.withValues(alpha: 0.1)
-                      : Theme.of(context).primaryColor.withValues(alpha: 0.1),
+                Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: isPending
+                        ? Colors.orange.withValues(alpha: 0.1)
+                        : Theme.of(context).primaryColor.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: isPending
+                          ? Colors.orange.withValues(alpha: 0.2)
+                          : Theme.of(context).primaryColor.withValues(alpha: 0.15),
+                    ),
+                  ),
+                  alignment: Alignment.center,
                   child: Icon(
                     isPending ? Icons.schedule_rounded : Icons.person_rounded,
-                    size: 18,
+                    size: 16,
                     color: isPending
                         ? Colors.orange.shade600
                         : Theme.of(context).primaryColor,
                   ),
                 ),
-                const SizedBox(width: 10),
-
+                const SizedBox(width: 8),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.center,
@@ -514,19 +532,21 @@ class _GroupScreenState extends State<GroupScreen> {
                         name,
                         style: TextStyle(
                           fontWeight: FontWeight.w600,
-                          fontSize: 13,
-                          color: isPending ? Colors.orange.shade700 : null,
+                          fontSize: 12,
+                          color: isPending
+                              ? Colors.orange.shade700
+                              : Theme.of(context).colorScheme.onSurface,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 3),
                       Text(
                         balanceText,
                         style: TextStyle(
                           color: balanceColor,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14,
                         ),
                       ),
                     ],
@@ -553,17 +573,16 @@ class _GroupScreenState extends State<GroupScreen> {
                   Container(
                     padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
-                      color: Theme.of(
-                        context,
-                      ).primaryColor.withValues(alpha: 0.1),
+                      color: Theme.of(context).primaryColor.withValues(alpha: 0.08),
                       shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Theme.of(context).primaryColor.withValues(alpha: 0.15),
+                      ),
                     ),
                     child: Icon(
                       Icons.receipt_long_rounded,
-                      size: 56,
-                      color: Theme.of(
-                        context,
-                      ).primaryColor.withValues(alpha: 0.6),
+                      size: 48,
+                      color: Theme.of(context).primaryColor.withValues(alpha: 0.5),
                     ),
                   ),
                   const SizedBox(height: 20),
@@ -572,13 +591,18 @@ class _GroupScreenState extends State<GroupScreen> {
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
-                      color: Theme.of(context).textTheme.bodyLarge?.color,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'Tap the button below to add one',
-                    style: TextStyle(color: Colors.grey.shade500, fontSize: 14),
+                    style: TextStyle(
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.grey.shade500
+                          : Colors.grey.shade500,
+                      fontSize: 14,
+                    ),
                   ),
                 ],
               ),
@@ -599,119 +623,128 @@ class _GroupScreenState extends State<GroupScreen> {
         final double amount = (expense['amount'] ?? 0).toDouble();
 
         final List<dynamic> visibleSplits = (expense['splits'] ?? []).where((
-          split,
-        ) {
+            split,
+            ) {
           final dynamic rawAmount = split['amount'];
           final int splitAmount = rawAmount is num ? rawAmount.toInt() : 0;
           return splitAmount > 0;
         }).toList();
 
-        return Card(
-          margin: const EdgeInsets.only(bottom: 16.0),
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-            side: BorderSide(
-              color: Theme.of(context).dividerColor.withValues(alpha: 0.5),
-              width: 1,
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: Theme.of(context).dividerColor.withValues(alpha: 0.3),
+              ),
             ),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Header Row
-                Row(
-                  children: [
-                    Container(
-                      width: 44,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        color: paidByMe
-                            ? Colors.green.shade50
-                            : Colors.orange.shade50,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Icon(
-                        paidByMe
-                            ? Icons.arrow_upward_rounded
-                            : Icons.arrow_downward_rounded,
-                        color: paidByMe
-                            ? Colors.green.shade600
-                            : Colors.orange.shade600,
-                        size: 22,
-                      ),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            expense['title'] ?? 'Expense',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 16,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Header Row
+                  Row(
+                    children: [
+                      Container(
+                        width: 42,
+                        height: 42,
+                        decoration: BoxDecoration(
+                          color: paidByMe
+                              ? Colors.green.withValues(alpha: 0.1)
+                              : Colors.orange.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: paidByMe
+                                ? Colors.green.withValues(alpha: 0.2)
+                                : Colors.orange.withValues(alpha: 0.2),
                           ),
-                          const SizedBox(height: 2),
-                          Text(
-                            subtitle,
-                            style: TextStyle(
-                              color: Colors.grey.shade500,
-                              fontSize: 13,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Theme.of(
-                          context,
-                        ).primaryColor.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Text(
-                        'Ŧ${amount.toInt()}',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                          color: Theme.of(context).primaryColor,
                         ),
+                        child: Icon(
+                          paidByMe
+                              ? Icons.arrow_upward_rounded
+                              : Icons.arrow_downward_rounded,
+                          color: paidByMe
+                              ? Colors.green.shade600
+                              : Colors.orange.shade600,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              expense['title'] ?? 'Expense',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 15,
+                                color: Theme.of(context).colorScheme.onSurface,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              subtitle,
+                              style: TextStyle(
+                                color: Theme.of(context).brightness == Brightness.dark
+                                    ? Colors.grey.shade500
+                                    : Colors.grey.shade500,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: Theme.of(context).primaryColor.withValues(alpha: 0.15),
+                          ),
+                        ),
+                        child: Text(
+                          'T${amount.toInt()}',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 15,
+                            color: Theme.of(context).primaryColor,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  // Splits List
+                  if (visibleSplits.isNotEmpty) ...[
+                    Padding(
+                      padding: const EdgeInsets.only(top: 14, bottom: 10),
+                      child: Container(
+                        height: 1,
+                        color: Theme.of(context).dividerColor.withValues(alpha: 0.3),
+                      ),
+                    ),
+                    ListView.separated(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: visibleSplits.length,
+                      separatorBuilder: (context, index) =>
+                      const SizedBox(height: 10),
+                      itemBuilder: (context, splitIndex) => _buildSplitRow(
+                        expense, splitIndex, paidByMe, visibleSplits,
                       ),
                     ),
                   ],
-                ),
-
-                // Splits List
-                if (visibleSplits.isNotEmpty) ...[
-                  const Padding(
-                    padding: EdgeInsets.only(top: 14, bottom: 10),
-                    child: Divider(height: 1),
-                  ),
-                  ListView.separated(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: visibleSplits.length,
-                    separatorBuilder: (context, index) =>
-                        const SizedBox(height: 10),
-                    itemBuilder: (context, splitIndex) => _buildSplitRow(
-                      expense,
-                      splitIndex,
-                      paidByMe,
-                      visibleSplits,
-                    ),
-                  ),
                 ],
-              ],
+              ),
             ),
           ),
         );
@@ -720,65 +753,60 @@ class _GroupScreenState extends State<GroupScreen> {
   }
 
   Widget _buildSplitRow(
-    Map<String, dynamic> expense,
-    int splitIndex,
-    bool paidByMe,
-    List<dynamic> splits,
-  ) {
+      Map<String, dynamic> expense,
+      int splitIndex,
+      bool paidByMe,
+      List<dynamic> splits,
+      ) {
     final split = splits[splitIndex];
     final bool isPaid = split['isPaid'] ?? false;
     final String name = split['name'] ?? 'Unknown';
     final int amount = (split['amount'] ?? 0).toInt();
     final int splitId = split['id'] ?? 0;
-
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
-
-    // Clean modern badges
-    final Color paidBgColor = Colors.green.withValues(
-      alpha: isDark ? 0.15 : 0.1,
-    );
-    final Color pendingBgColor = Colors.orange.withValues(
-      alpha: isDark ? 0.15 : 0.1,
-    );
-
-    final Color paidTextColor = isDark
-        ? Colors.green.shade300
-        : Colors.green.shade700;
-    final Color pendingTextColor = isDark
-        ? Colors.orange.shade300
-        : Colors.orange.shade800;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     Widget statusBadge = Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: isPaid ? paidBgColor : pendingBgColor,
-        borderRadius: BorderRadius.circular(8),
+        color: isPaid
+            ? Colors.green.withValues(alpha: isDark ? 0.15 : 0.1)
+            : Colors.orange.withValues(alpha: isDark ? 0.15 : 0.1),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: isPaid
+              ? Colors.green.withValues(alpha: isDark ? 0.3 : 0.2)
+              : Colors.orange.withValues(alpha: isDark ? 0.3 : 0.2),
+        ),
       ),
       child: Text(
-        isPaid ? 'Paid' : 'Pending',
+        isPaid ? 'Paid' : 'Unpaid',
         style: TextStyle(
-          color: isPaid ? paidTextColor : pendingTextColor,
+          color: isPaid
+              ? (isDark ? Colors.green.shade300 : Colors.green.shade700)
+              : (isDark ? Colors.orange.shade300 : Colors.orange.shade800),
           fontSize: 12,
-          fontWeight: FontWeight.bold,
+          fontWeight: FontWeight.w700,
         ),
       ),
     );
 
     return Row(
       children: [
-        // Left Side: Avatar + Info
         Expanded(
           child: Row(
             children: [
-              CircleAvatar(
-                radius: 16,
-                backgroundColor: Theme.of(
-                  context,
-                ).primaryColor.withValues(alpha: 0.1),
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                alignment: Alignment.center,
                 child: Text(
                   name.isNotEmpty ? name[0].toUpperCase() : '?',
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: 13,
                     fontWeight: FontWeight.bold,
                     color: Theme.of(context).primaryColor,
                   ),
@@ -791,16 +819,17 @@ class _GroupScreenState extends State<GroupScreen> {
                   children: [
                     Text(
                       name,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.w600,
                         fontSize: 14,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
                     Text(
-                      '${name == 'You' ? 'owe' : 'owes'} Ŧ${amount.toInt()}',
+                      '${name == 'You' ? 'owe' : 'owes'} T${amount.toInt()}',
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.grey.shade500,
+                        color: isDark ? Colors.grey.shade500 : Colors.grey.shade500,
                       ),
                     ),
                   ],
@@ -819,16 +848,16 @@ class _GroupScreenState extends State<GroupScreen> {
                 padding: const EdgeInsets.only(right: 8.0),
                 child: OutlinedButton(
                   onPressed: () async {
+                    HapticFeedback.lightImpact();
                     final int recipientId = split['user'];
 
                     if (recipientId == 0) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                          content: Text(
-                            'Could not find user ID to send reminder.',
-                          ),
+                          content: Text('Could not find user ID to send reminder.'),
                           behavior: SnackBarBehavior.floating,
                           backgroundColor: Colors.red,
+                          elevation: 0,
                         ),
                       );
                       return;
@@ -846,6 +875,8 @@ class _GroupScreenState extends State<GroupScreen> {
                             content: Text('Reminded $name to Pay up!'),
                             behavior: SnackBarBehavior.floating,
                             backgroundColor: Colors.green.shade600,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           ),
                         );
                       }
@@ -856,6 +887,8 @@ class _GroupScreenState extends State<GroupScreen> {
                             content: Text('Failed to send reminder: $e'),
                             behavior: SnackBarBehavior.floating,
                             backgroundColor: Colors.red.shade700,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           ),
                         );
                       }
@@ -863,36 +896,70 @@ class _GroupScreenState extends State<GroupScreen> {
                   },
                   style: OutlinedButton.styleFrom(
                     side: BorderSide(
-                      color: Theme.of(
-                        context,
-                      ).primaryColor.withValues(alpha: 0.5),
+                      color: Theme.of(context).primaryColor.withValues(alpha: 0.5),
                     ),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 5,
-                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     minimumSize: Size.zero,
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(10),
                     ),
                   ),
                   child: Text(
                     'Pay up!',
                     style: TextStyle(
                       fontSize: 11,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w700,
                       color: Theme.of(context).primaryColor,
                     ),
                   ),
                 ),
               ),
 
-            // Status Badge (Tappable if paidByMe for optimistic UI update)
+            // Status Badge
             if (paidByMe)
               InkWell(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(10),
                 onTap: () async {
+                  HapticFeedback.lightImpact();
+
+                  final bool? confirm = await showDialog<bool>(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      title: const Text(
+                        'Mark as Paid?',
+                        style: TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                      content: Text(
+                        'Mark ${split['name'] ?? 'this member'}\'s share of Ŧ${(split['amount'] ?? 0).toStringAsFixed(2)} as paid?',
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx, false),
+                          child: const Text('Cancel'),
+                        ),
+                        ElevatedButton(
+                          onPressed: () => Navigator.pop(ctx, true),
+                          style: ElevatedButton.styleFrom(
+                            elevation: 0,
+                            backgroundColor: Colors.green.shade600,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                          child: const Text('Mark Paid'),
+                        ),
+                      ],
+                    ),
+                  );
+
+                  if (confirm != true) return;
+
                   setState(() {
                     split['isPaid'] = true;
                   });
@@ -908,6 +975,7 @@ class _GroupScreenState extends State<GroupScreen> {
                         const SnackBar(
                           content: Text('Failed to update status'),
                           behavior: SnackBarBehavior.floating,
+                          elevation: 0,
                         ),
                       );
                     }
