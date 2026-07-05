@@ -1,6 +1,6 @@
 from .models import Friendship
 from .serializers import FriendRequestSerializer
-from rest_framework import generics, permissions
+from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
 from .serializers import RegisterSerializer, LoginSerializer, UserSerializer
@@ -82,6 +82,24 @@ class AcceptFriendRequestView(generics.UpdateAPIView):
             friendship.save()
             return Response({'status': 'accepted'})
         return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
+
+class RejectFriendRequestView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def delete(self, request, pk):
+        try:
+            friendship = Friendship.objects.get(pk=pk)
+        except Friendship.DoesNotExist:
+            return Response({"error": "Friend request not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        if friendship.receiver != request.user:
+            return Response({"error": "Unauthorized"}, status=status.HTTP_403_FORBIDDEN)
+
+        if friendship.status != 'pending':
+            return Response({"error": "This request has already been handled."}, status=status.HTTP_400_BAD_REQUEST)
+
+        friendship.delete()
+        return Response({"status": "rejected"}, status=status.HTTP_200_OK)
 
 class FriendsListView(APIView):
     permission_classes = [permissions.IsAuthenticated]

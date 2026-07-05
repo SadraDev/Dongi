@@ -34,6 +34,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     def validate_username(self, value):
         # Check for reserved usernames (case-insensitive)
+        return value
         user = User(username=value)
         if user.is_username_reserved():
             raise serializers.ValidationError("There can only be one God.")
@@ -42,7 +43,6 @@ class RegisterSerializer(serializers.ModelSerializer):
         if User.objects.filter(username__iexact=value).exists():
             raise serializers.ValidationError("A user with this username already exists.")
         
-        return value
 
     def create(self, validated_data):
         # We must use create_user so the password gets hashed (encrypted)

@@ -19,13 +19,15 @@ class CaseInsensitiveSlugRelatedField(serializers.SlugRelatedField):
 
 class GroupSerializer(serializers.ModelSerializer):
     balance = serializers.SerializerMethodField()
+    total_owed = serializers.SerializerMethodField()
+    total_owe = serializers.SerializerMethodField()
     members = CaseInsensitiveSlugRelatedField(
         many=True, queryset=User.objects.all(), slug_field='username', required=False
     )
 
     class Meta:
         model = Group
-        fields = ('id', 'name', 'balance', 'members', 'created_by')
+        fields = ('id', 'name', 'balance', 'total_owed', 'total_owe', 'members', 'created_by')
         read_only_fields = ('created_by',)
 
     def create(self, validated_data):
@@ -43,23 +45,26 @@ class GroupSerializer(serializers.ModelSerializer):
                 GroupMember.objects.create(group=group, user=invited_user, status='pending')
         
         return group
-        
-    def get_balance(self, obj):
+    
+    def get_total_owed(self, obj):
+        """Total amount others owe you (unpaid splits where you paid)"""
         user = self.context['request'].user
-        
-        # 1. Money the user OWEs (Unpaid debts)
-        total_owe_dec = obj.expenses.filter(
-            splits__user=user, 
-            splits__is_paid=False
-        ).aggregate(total=Sum('splits__amount_owed'))['total'] or 0.0
-        
-        # 2. Money the user is OWED
-        # Only sum the splits of others where is_paid=False
-        # We look for all expenses paid by the user, then look at the splits of OTHER people
         total_lent = obj.expenses.filter(
             payer=user
         ).aggregate(
             total=Sum('splits__amount_owed', filter=~models.Q(splits__user=user) & models.Q(splits__is_paid=False))
         )['total'] or 0.0
+        return float(total_lent)
+    
+    def get_total_owe(self, obj):
+        """Total amount you owe others (unpaid splits where you didn't pay)"""
+        user = self.context['request'].user
+        total_owe = obj.expenses.filter(
+            splits__user=user, 
+            splits__is_paid=False
+        ).aggregate(total=Sum('splits__amount_owed'))['total'] or 0.0
+        return float(total_owe)
         
-        return float(total_lent) - float(total_owe_dec)
+    def get_balance(self, obj):
+        """Net balance (owed - owe)"""
+        return self.get_total_owed(obj) - self.get_total_owe(obj)

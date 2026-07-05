@@ -1,4 +1,4 @@
-from rest_framework import generics, permissions
+from rest_framework import generics, permissions, status
 from expenses.permissions import IsGroupCreator
 from .models import Group, GroupMember, Expense, ExpenseSplit
 from .serializers import GroupSerializer
@@ -7,6 +7,7 @@ from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
 from django.db.models import Sum
+
 
 class GroupListView(generics.ListAPIView):
     serializer_class = GroupSerializer
@@ -34,6 +35,21 @@ class AcceptGroupInviteView(generics.UpdateAPIView):
         membership.status = 'accepted'
         membership.save()
         return Response({'status': 'Accepted'})
+
+class RejectGroupInviteView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, pk):
+        try:
+            membership = GroupMember.objects.get(group_id=pk, user=request.user)
+        except GroupMember.DoesNotExist:
+            return Response({"error": "Group invitation not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        if membership.status != 'pending':
+            return Response({"error": "This invitation has already been handled."}, status=status.HTTP_400_BAD_REQUEST)
+
+        membership.delete()
+        return Response({"status": "rejected"}, status=status.HTTP_200_OK)
 
 class GroupDeleteView(generics.DestroyAPIView):
     queryset = Group.objects.all()
@@ -90,9 +106,8 @@ class GroupDetailView(APIView):
             
             splits_data = []
             for split in exp.splits.all():
-                # FIX: Only include splits where the user owes money 
-                # (is_paid=False) and is not the payer
-                if split.user == exp.payer or split.is_paid:
+                # Only include splits where the user owes money
+                if split.user == exp.payer:
                     continue
                     
                 splits_data.append({

@@ -42,6 +42,14 @@ class GroupService {
     );
   }
 
+  static Future<void> rejectGroupInvite(int groupId) async {
+    final token = await AuthService.getToken();
+    await _dio.delete(
+      '/expenses/groups/$groupId/reject/',
+      options: Options(headers: {'Authorization': 'Token $token'}),
+    );
+  }
+
   static Future<void> deleteGroup(int groupId) async {
     final token = await AuthService.getToken();
     await _dio.delete(

@@ -38,6 +38,12 @@ class FriendService {
     await _dio.put('/friends/accept/$requestId/', options: options);
   }
 
+  // 4. Reject a friend request
+  static Future<void> rejectFriendRequest(int requestId) async {
+    final options = await _getAuthOptions();
+    await _dio.delete('/friends/reject/$requestId/', options: options);
+  }
+
   // Add these to your FriendService class
   static Future<List<dynamic>> searchUsers(String query) async {
     final options = await _getAuthOptions();

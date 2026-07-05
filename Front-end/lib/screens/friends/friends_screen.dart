@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../services/friend_service.dart';
-import '../../services/group_service.dart'; // <-- Added GroupService import
+import '../../services/group_service.dart';
 
 class FriendsScreen extends StatefulWidget {
   const FriendsScreen({super.key});
@@ -110,10 +110,11 @@ class _FriendsScreenState extends State<FriendsScreen> {
               _removeFriend(id, username);
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
+              backgroundColor: Colors.red.shade600,
               foregroundColor: Colors.white,
+              elevation: 0,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(12),
               ),
             ),
             child: const Text('Remove'),
@@ -141,18 +142,15 @@ class _FriendsScreenState extends State<FriendsScreen> {
           ),
           backgroundColor: Colors.red.shade700,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
+          elevation: 0,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         ),
       );
     }
   }
 
-  // --- NEW: Group Selection Dialog ---
   void _showGroupSelectionDialog(String username) {
-    // 1. Capture the screen's context safely to use for nested dialogs
     final screenContext = context;
 
     showDialog(
@@ -163,7 +161,6 @@ class _FriendsScreenState extends State<FriendsScreen> {
             borderRadius: BorderRadius.circular(16),
           ),
           title: const Text('Add to Group'),
-          // FIX: Wrap in SizedBox to prevent intrinsic dimension crash with ListView
           content: SizedBox(
             width: double.maxFinite,
             child: FutureBuilder<List<dynamic>>(
@@ -176,33 +173,14 @@ class _FriendsScreenState extends State<FriendsScreen> {
                   );
                 }
 
-                // DEBUG: If it fails, show the EXACT error inside the dialog
                 if (snapshot.hasError) {
                   return Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(
-                        Icons.error_outline,
-                        size: 48,
-                        color: Colors.red,
-                      ),
+                      Icon(Icons.error_outline, size: 48, color: Colors.red.shade300),
                       const SizedBox(height: 16),
-                      const Text(
-                        'Failed to load groups',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        '${snapshot.error}', // This will tell you exactly what went wrong
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey,
-                        ),
-                      ),
+                      const Text('Failed to load groups',
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
                     ],
                   );
                 }
@@ -211,27 +189,15 @@ class _FriendsScreenState extends State<FriendsScreen> {
                   return Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(
-                        Icons.group_off_rounded,
-                        size: 48,
-                        color: Colors.grey.shade400,
-                      ),
+                      Icon(Icons.group_off_rounded, size: 48, color: Colors.grey.shade400),
                       const SizedBox(height: 16),
-                      const Text(
-                        'No groups available',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: Colors.grey,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
+                      const Text('No groups available',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: Colors.grey, fontSize: 16, fontWeight: FontWeight.w600)),
                       const SizedBox(height: 8),
-                      const Text(
-                        'Create a group first to invite friends.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 13, color: Colors.grey),
-                      ),
+                      const Text('Create a group first to invite friends.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontSize: 13, color: Colors.grey)),
                     ],
                   );
                 }
@@ -244,10 +210,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
                   children: [
                     Text(
                       'Select a group to invite $username:',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey.shade600,
-                      ),
+                      style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
                     ),
                     const SizedBox(height: 16),
                     ConstrainedBox(
@@ -256,11 +219,9 @@ class _FriendsScreenState extends State<FriendsScreen> {
                         shrinkWrap: true,
                         itemCount: groups.length,
                         separatorBuilder: (context, index) =>
-                            const SizedBox(height: 8),
+                        const SizedBox(height: 8),
                         itemBuilder: (context, index) {
                           final group = groups[index];
-
-                          // SAFE ACCESS: Handles both 'Group' objects and raw Maps from JSON
                           final int groupId = group is Map
                               ? group['id']
                               : (group as dynamic).id;
@@ -271,16 +232,14 @@ class _FriendsScreenState extends State<FriendsScreen> {
                           return InkWell(
                             borderRadius: BorderRadius.circular(12),
                             onTap: () async {
-                              Navigator.pop(
-                                dialogContext,
-                              ); // Close group selection dialog
+                              Navigator.pop(dialogContext);
 
-                              // Use screenContext here, not the FutureBuilder context
                               showDialog(
                                 context: screenContext,
                                 barrierDismissible: false,
                                 builder: (_) => const Center(
                                   child: Card(
+                                    elevation: 0,
                                     child: Padding(
                                       padding: EdgeInsets.all(24),
                                       child: CircularProgressIndicator(),
@@ -295,51 +254,47 @@ class _FriendsScreenState extends State<FriendsScreen> {
                                   username,
                                 );
                                 if (screenContext.mounted) {
-                                  Navigator.pop(screenContext); // Close loading
+                                  Navigator.pop(screenContext);
                                   _showSuccessSnackBar(
                                     '$username invited to $groupName',
                                   );
                                 }
                               } catch (e) {
                                 if (screenContext.mounted) {
-                                  Navigator.pop(screenContext); // Close loading
+                                  Navigator.pop(screenContext);
                                   _showErrorSnackBar(
-                                    e.toString().replaceFirst(
-                                      'Exception: ',
-                                      '',
-                                    ),
+                                    e.toString().replaceFirst('Exception: ', ''),
                                   );
                                 }
                               }
                             },
                             child: Container(
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 10,
+                                horizontal: 12, vertical: 10,
                               ),
                               decoration: BoxDecoration(
                                 border: Border.all(
-                                  color: Theme.of(
-                                    context,
-                                  ).dividerColor.withValues(alpha: 0.5),
+                                  color: Theme.of(context)
+                                      .dividerColor
+                                      .withValues(alpha: 0.3),
                                 ),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Row(
                                 children: [
                                   Container(
-                                    width: 40,
-                                    height: 40,
+                                    width: 38,
+                                    height: 38,
                                     decoration: BoxDecoration(
-                                      color: Theme.of(
-                                        context,
-                                      ).primaryColor.withValues(alpha: 0.1),
+                                      color: Theme.of(context)
+                                          .primaryColor
+                                          .withValues(alpha: 0.1),
                                       borderRadius: BorderRadius.circular(10),
                                     ),
                                     child: Icon(
                                       Icons.group_rounded,
                                       color: Theme.of(context).primaryColor,
-                                      size: 20,
+                                      size: 18,
                                     ),
                                   ),
                                   const SizedBox(width: 12),
@@ -347,16 +302,13 @@ class _FriendsScreenState extends State<FriendsScreen> {
                                     child: Text(
                                       groupName,
                                       style: const TextStyle(
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 15,
+                                        fontWeight: FontWeight.w600, fontSize: 14,
                                       ),
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
-                                  Icon(
-                                    Icons.chevron_right_rounded,
-                                    color: Colors.grey.shade400,
-                                  ),
+                                  Icon(Icons.chevron_right_rounded,
+                                      color: Colors.grey.shade400, size: 20),
                                 ],
                               ),
                             ),
@@ -393,6 +345,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
         ),
         backgroundColor: Colors.green.shade600,
         behavior: SnackBarBehavior.floating,
+        elevation: 0,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       ),
@@ -412,6 +365,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
         ),
         backgroundColor: Colors.orange.shade700,
         behavior: SnackBarBehavior.floating,
+        elevation: 0,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       ),
@@ -420,18 +374,20 @@ class _FriendsScreenState extends State<FriendsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Friends'),
+        title: const Text('Friends',
+            style: TextStyle(fontWeight: FontWeight.w700)),
+        elevation: 0,
         actions: [
           if (_pendingRequests.isNotEmpty)
             Badge(
               label: Text('${_pendingRequests.length}'),
               child: IconButton(
                 icon: const Icon(Icons.person_add_outlined),
-                onPressed: () {
-                  // Navigate to pending requests
-                },
+                onPressed: () {},
               ),
             ),
         ],
@@ -446,41 +402,44 @@ class _FriendsScreenState extends State<FriendsScreen> {
               onChanged: _onSearchChanged,
               decoration: InputDecoration(
                 labelText: 'Search by username',
-                prefixIcon: const Icon(Icons.search_rounded),
+                prefixIcon: const Icon(Icons.search_rounded, size: 20),
                 suffixIcon: _isSearching
                     ? const Padding(
-                        padding: EdgeInsets.all(12),
-                        child: SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                      )
+                  padding: EdgeInsets.all(12),
+                  child: SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                )
                     : _searchController.text.isNotEmpty
                     ? IconButton(
-                        icon: const Icon(Icons.clear_rounded),
-                        onPressed: () {
-                          _searchController.clear();
-                          setState(() => _searchResults = []);
-                        },
-                      )
+                  icon: const Icon(Icons.clear_rounded, size: 20),
+                  onPressed: () {
+                    _searchController.clear();
+                    setState(() => _searchResults = []);
+                  },
+                )
                     : null,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
                 filled: true,
-                fillColor: Theme.of(context).brightness == Brightness.dark
-                    ? Colors.grey.shade800
-                    : Colors.grey.shade100,
+                fillColor: isDark ? Colors.grey.shade800 : Colors.grey.shade100,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide(
+                    color: Theme.of(context).dividerColor.withValues(alpha: 0.3),
+                  ),
+                ),
                 enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: BorderSide.none,
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide(
+                    color: Theme.of(context).dividerColor.withValues(alpha: 0.3),
+                  ),
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(16),
                   borderSide: BorderSide(
                     color: Theme.of(context).primaryColor,
-                    width: 2,
+                    width: 1.5,
                   ),
                 ),
               ),
@@ -496,21 +455,16 @@ class _FriendsScreenState extends State<FriendsScreen> {
                   Text(
                     "Search Results",
                     style: TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 14,
-                      color: Colors.grey.shade600,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                      color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
                     ),
                   ),
                   const SizedBox(width: 8),
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 2,
-                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
-                      color: Theme.of(
-                        context,
-                      ).primaryColor.withValues(alpha: 0.1),
+                      color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Text(
@@ -526,7 +480,13 @@ class _FriendsScreenState extends State<FriendsScreen> {
               ),
             ),
             ..._searchResults.map((user) => _buildSearchResultCard(user)),
-            const Divider(height: 32),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              child: Container(
+                height: 1,
+                color: Theme.of(context).dividerColor.withValues(alpha: 0.3),
+              ),
+            ),
           ],
 
           // My Friends Header
@@ -537,20 +497,19 @@ class _FriendsScreenState extends State<FriendsScreen> {
                 Text(
                   "My Friends",
                   style: TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 14,
-                    color: Colors.grey.shade600,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                    color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
                   ),
                 ),
                 const SizedBox(width: 8),
                 if (!_isLoadingFriends)
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 2,
-                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
-                      color: Colors.grey.shade200,
+                      color: isDark
+                          ? Colors.grey.shade800
+                          : Colors.grey.shade200,
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Text(
@@ -558,7 +517,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
-                        color: Colors.grey.shade600,
+                        color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
                       ),
                     ),
                   ),
@@ -573,14 +532,15 @@ class _FriendsScreenState extends State<FriendsScreen> {
                 : _friends.isEmpty
                 ? _buildEmptyState()
                 : RefreshIndicator(
-                    onRefresh: _loadFriends,
-                    child: ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      itemCount: _friends.length,
-                      itemBuilder: (context, index) =>
-                          _buildFriendCard(_friends[index], index),
-                    ),
-                  ),
+              color: Theme.of(context).primaryColor,
+              onRefresh: _loadFriends,
+              child: ListView.builder(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                itemCount: _friends.length,
+                itemBuilder: (context, index) =>
+                    _buildFriendCard(_friends[index], index),
+              ),
+            ),
           ),
         ],
       ),
@@ -593,42 +553,51 @@ class _FriendsScreenState extends State<FriendsScreen> {
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      child: Card(
-        elevation: 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
-          side: BorderSide(
-            color: Theme.of(context).dividerColor.withValues(alpha: 0.5),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: Theme.of(context).dividerColor.withValues(alpha: 0.3),
           ),
         ),
         child: ListTile(
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 4,
-          ),
-          leading: CircleAvatar(
-            backgroundColor: Theme.of(
-              context,
-            ).primaryColor.withValues(alpha: 0.1),
+          contentPadding:
+          const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          leading: Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            alignment: Alignment.center,
             child: Text(
               firstLetter,
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 color: Theme.of(context).primaryColor,
+                fontSize: 16,
               ),
             ),
           ),
           title: Text(
             username,
-            style: const TextStyle(fontWeight: FontWeight.w600),
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 15,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
           ),
           trailing: SizedBox(
-            height: 43,
+            height: 40,
             child: ElevatedButton.icon(
               onPressed: () => _sendRequest(username),
               icon: const Icon(Icons.add, size: 16),
-              label: const Text("Add"),
+              label: const Text("Add", style: TextStyle(fontSize: 13)),
               style: ElevatedButton.styleFrom(
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(horizontal: 14),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
@@ -648,12 +617,13 @@ class _FriendsScreenState extends State<FriendsScreen> {
       key: ValueKey(friend['id']),
       direction: DismissDirection.endToStart,
       background: Container(
-        margin: const EdgeInsets.only(bottom: 8),
+        margin: const EdgeInsets.only(bottom: 10),
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 20),
         decoration: BoxDecoration(
           color: Colors.red.shade50,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.red.shade200),
         ),
         child: Icon(Icons.delete_outline, color: Colors.red.shade400),
       ),
@@ -661,52 +631,72 @@ class _FriendsScreenState extends State<FriendsScreen> {
         _showRemoveDialog(friend['id'], username);
         return false;
       },
-      child: Card(
-        margin: const EdgeInsets.only(bottom: 8),
-        elevation: 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
-          side: BorderSide(
-            color: Theme.of(context).dividerColor.withValues(alpha: 0.3),
-          ),
-        ),
-        child: ListTile(
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 4,
-          ),
-          leading: CircleAvatar(
-            backgroundColor: Theme.of(
-              context,
-            ).primaryColor.withValues(alpha: 0.1),
-            child: Text(
-              firstLetter,
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Theme.of(context).primaryColor,
-              ),
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 10),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: Theme.of(context).dividerColor.withValues(alpha: 0.3),
             ),
           ),
-          title: Text(
-            username,
-            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+          child: ListTile(
+            contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            leading: Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                firstLetter,
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).primaryColor,
+                  fontSize: 16,
+                ),
+              ),
+            ),
+            title: Text(
+              username,
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 15,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
+            subtitle: Text(
+              'Tap for options',
+              style: TextStyle(
+                fontSize: 12,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.grey.shade500
+                    : Colors.grey.shade400,
+              ),
+            ),
+            trailing: IconButton(
+              icon: Icon(Icons.more_vert_rounded,
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.grey.shade500
+                      : Colors.grey.shade400,
+                  size: 20),
+              onPressed: () => _showFriendOptions(friend, username),
+            ),
+            onLongPress: () => _showFriendOptions(friend, username),
           ),
-          subtitle: Text(
-            'Tap and hold for options',
-            style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
-          ),
-          trailing: IconButton(
-            icon: Icon(Icons.more_vert_rounded, color: Colors.grey.shade500),
-            onPressed: () => _showFriendOptions(friend, username),
-          ),
-          onLongPress: () => _showFriendOptions(friend, username),
         ),
       ),
     );
   }
 
   void _showFriendOptions(dynamic friend, String username) {
-    HapticFeedback.mediumImpact();
+    HapticFeedback.lightImpact();
+    final firstLetter = username.isNotEmpty ? username[0].toUpperCase() : '?';
+
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -717,11 +707,14 @@ class _FriendsScreenState extends State<FriendsScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             const SizedBox(height: 8),
+            // Drag Handle
             Container(
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.grey.shade300,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.grey.shade700
+                    : Colors.grey.shade300,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -729,13 +722,19 @@ class _FriendsScreenState extends State<FriendsScreen> {
               padding: const EdgeInsets.all(20),
               child: Row(
                 children: [
-                  CircleAvatar(
-                    radius: 28,
-                    backgroundColor: Theme.of(
-                      context,
-                    ).primaryColor.withValues(alpha: 0.1),
+                  Container(
+                    width: 52,
+                    height: 52,
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: Theme.of(context).primaryColor.withValues(alpha: 0.15),
+                      ),
+                    ),
+                    alignment: Alignment.center,
                     child: Text(
-                      username[0].toUpperCase(),
+                      firstLetter,
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
@@ -750,7 +749,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
                       Text(
                         username,
                         style: const TextStyle(
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w700,
                           fontSize: 18,
                         ),
                       ),
@@ -763,25 +762,34 @@ class _FriendsScreenState extends State<FriendsScreen> {
                 ],
               ),
             ),
-            const Divider(height: 1),
+            Container(
+              height: 1,
+              color: Theme.of(context).dividerColor.withValues(alpha: 0.3),
+            ),
             ListTile(
               leading: const Icon(Icons.group_add_outlined),
-              title: const Text('Add to Group'),
+              title: const Text('Add to Group',
+                  style: TextStyle(fontWeight: FontWeight.w500)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
               onTap: () {
-                Navigator.pop(context); // Close bottom sheet
-                _showGroupSelectionDialog(username); // <-- ADDED THIS
+                HapticFeedback.lightImpact();
+                Navigator.pop(context);
+                _showGroupSelectionDialog(username);
               },
             ),
             ListTile(
-              leading: const Icon(
-                Icons.person_remove_outlined,
-                color: Colors.red,
-              ),
+              leading: const Icon(Icons.person_remove_outlined, color: Colors.red),
               title: const Text(
                 'Remove Friend',
-                style: TextStyle(color: Colors.red),
+                style: TextStyle(color: Colors.red, fontWeight: FontWeight.w500),
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
               ),
               onTap: () {
+                HapticFeedback.lightImpact();
                 Navigator.pop(context);
                 _showRemoveDialog(friend['id'], username);
               },
@@ -805,13 +813,20 @@ class _FriendsScreenState extends State<FriendsScreen> {
                 Container(
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
-                    color: Colors.grey.shade200,
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.grey.shade800
+                        : Colors.grey.shade100,
                     shape: BoxShape.circle,
+                    border: Border.all(
+                      color: Theme.of(context).dividerColor.withValues(alpha: 0.3),
+                    ),
                   ),
                   child: Icon(
                     Icons.people_outline_rounded,
-                    size: 64,
-                    color: Colors.grey.shade400,
+                    size: 56,
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.grey.shade600
+                        : Colors.grey.shade400,
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -820,14 +835,19 @@ class _FriendsScreenState extends State<FriendsScreen> {
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
-                    color: Colors.grey.shade700,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   'Search for users above\nand send friend requests',
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.grey.shade500
+                        : Colors.grey.shade500,
+                  ),
                 ),
               ],
             ),
