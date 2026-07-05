@@ -4,7 +4,6 @@ import 'auth_service.dart';
 class NotificationService {
   // static final Dio _dio = Dio(BaseOptions(baseUrl: 'http://10.0.2.2:8000/api'));
   static final Dio _dio = Dio(BaseOptions(baseUrl: 'http://81.22.134.29:8000/api'));
-
   static Future<List<dynamic>> fetchNotifications() async {
     final token = await AuthService.getToken();
     final response = await _dio.get(

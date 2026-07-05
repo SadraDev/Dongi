@@ -57,6 +57,39 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
     super.dispose();
   }
 
+  /// Returns the auto-calculated split for a member whose field is empty.
+  /// Returns null if the field has a value, or if there's nothing to distribute.
+  String? _getAutoSplitHint(int userId) {
+    final totalAmount = double.tryParse(_amountController.text.trim()) ?? 0;
+    if (totalAmount <= 0) return null;
+
+    // If this field already has a value, no hint needed
+    if (_customSplitControllers[userId]!.text.trim().isNotEmpty) return null;
+
+    // Sum of all filled fields
+    double filledTotal = 0;
+    int emptyCount = 0;
+    for (var entry in _customSplitControllers.entries) {
+      final val = entry.value.text.trim();
+      if (val.isEmpty) {
+        emptyCount++;
+      } else {
+        filledTotal += double.tryParse(val) ?? 0;
+      }
+    }
+
+    if (emptyCount == 0) return null;
+
+    final remaining = totalAmount - filledTotal;
+    if (remaining <= 0) return null;
+
+    final perPerson = remaining / emptyCount;
+    return perPerson == perPerson.roundToDouble()
+        ? perPerson.toInt().toString()
+        : perPerson.toStringAsFixed(2);
+  }
+
+  /// Total of all manually entered splits (empty fields count as 0).
   double _getTotalSplits() {
     double total = 0;
     for (var controller in _customSplitControllers.values) {
@@ -65,12 +98,10 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
     return total;
   }
 
-  int _getUnfilledSplitCount() {
-    int count = 0;
-    for (var controller in _customSplitControllers.values) {
-      if (controller.text.trim().isEmpty) count++;
-    }
-    return count;
+  bool _isOverSplit() {
+    final totalAmount = double.tryParse(_amountController.text.trim()) ?? 0;
+    if (totalAmount <= 0) return false;
+    return _getTotalSplits() > totalAmount + 0.01;
   }
 
   Future<void> _savePayment() async {
@@ -100,19 +131,20 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
     List<Map<String, dynamic>>? customSplitsData;
 
     if (!_divideEqually) {
-      final unfilled = _getUnfilledSplitCount();
-      if (unfilled > 0) {
-        _showError('Please fill in all split amounts ($unfilled remaining)');
-        return;
-      }
-
       customSplitsData = [];
       double splitSum = 0;
 
       for (var member in _allMembers) {
         final int userId = member['id'];
         final String inputVal = _customSplitControllers[userId]!.text.trim();
-        final double splitAmount = double.tryParse(inputVal) ?? 0;
+
+        // If field is empty, use the auto-calculated hint value
+        double splitAmount;
+        if (inputVal.isEmpty) {
+          splitAmount = double.tryParse(_getAutoSplitHint(userId) ?? '0') ?? 0;
+        } else {
+          splitAmount = double.tryParse(inputVal) ?? 0;
+        }
 
         splitSum += splitAmount;
         customSplitsData.add({'user_id': userId, 'amount_owed': splitAmount});
@@ -182,7 +214,7 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
         controller: _scrollController,
         physics: const BouncingScrollPhysics(),
         padding: const EdgeInsets.fromLTRB(
-          16, 16, 16, 100, // Bottom padding for FAB
+          16, 16, 16, 100,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -364,7 +396,7 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: _isSaving ? null : _savePayment,
+        onPressed: _isSaving ? null : _isOverSplit() ? null : _savePayment,
         icon: _isSaving
             ? const SizedBox(
           width: 20,
@@ -440,7 +472,7 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
     final totalAmount = double.tryParse(_amountController.text.trim()) ?? 0;
     final totalSplits = _getTotalSplits();
     final difference = totalAmount - totalSplits;
-    final isBalanced = (difference).abs() < 0.01 && totalAmount > 0;
+    final isBalanced = difference.abs() < 0.01 && totalAmount > 0;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Column(
@@ -459,23 +491,31 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
                 decoration: BoxDecoration(
                   color: isBalanced
                       ? Colors.green.withValues(alpha: isDark ? 0.15 : 0.1)
+                      : difference < 0
+                      ? Colors.red.withValues(alpha: isDark ? 0.15 : 0.1)
                       : Colors.orange.withValues(alpha: isDark ? 0.15 : 0.1),
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
                     color: isBalanced
                         ? Colors.green.withValues(alpha: 0.3)
+                        : difference < 0
+                        ? Colors.red.withValues(alpha: 0.3)
                         : Colors.orange.withValues(alpha: 0.3),
                   ),
                 ),
                 child: Text(
                   isBalanced
                       ? 'Balanced'
-                      : 'Remaining: T${difference.abs().toStringAsFixed(2)}',
+                      : difference < 0
+                      ? 'Math == 👌'
+                      : 'Remaining: T${difference.toStringAsFixed(2)}',
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
                     color: isBalanced
                         ? Colors.green.shade700
+                        : difference < 0
+                        ? Colors.red.shade700
                         : Colors.orange.shade700,
                   ),
                 ),
@@ -493,6 +533,7 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
     final String name = member['name'];
     final bool isYou = name == 'You';
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final autoHint = _getAutoSplitHint(userId);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
@@ -560,9 +601,11 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
                   color: isDark ? Colors.grey.shade500 : Colors.grey.shade500,
                   fontWeight: FontWeight.w500,
                 ),
-                hintText: '0.0',
+                hintText: autoHint != null ? autoHint : '0.0',
                 hintStyle: TextStyle(
-                  color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
+                  color: autoHint != null
+                      ? Theme.of(context).primaryColor.withValues(alpha: 0.5)
+                      : (isDark ? Colors.grey.shade700 : Colors.grey.shade300),
                 ),
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 12, vertical: 10,
