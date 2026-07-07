@@ -1,15 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../../main.dart';
 import '../../services/auth_service.dart';
 import '../auth/auth_screen.dart';
+import '../../services/settings_service.dart';
+import '../../app_state.dart';
 
-// Global Notifiers for Dashboard Preferences
-final ValueNotifier<bool> showFriendsNotifier = ValueNotifier(true);
-final ValueNotifier<bool> showGroupsNotifier = ValueNotifier(true);
 
-class SettingsScreen extends StatelessWidget {
+class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
+
+  @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _handleLogout(BuildContext context) async {
     final confirm = await showDialog<bool>(
@@ -200,6 +204,7 @@ class SettingsScreen extends StatelessWidget {
       onTap: () {
         HapticFeedback.lightImpact();
         themeNotifier.value = value;
+        SettingsService.saveThemeMode(value);
       },
     );
   }
@@ -277,6 +282,7 @@ class SettingsScreen extends StatelessWidget {
                 onChanged: (val) {
                   HapticFeedback.lightImpact();
                   showFriendsNotifier.value = val;
+                  SettingsService.saveShowFriends(val);
                 },
               );
             },
@@ -313,6 +319,7 @@ class SettingsScreen extends StatelessWidget {
                 onChanged: (val) {
                   HapticFeedback.lightImpact();
                   showGroupsNotifier.value = val;
+                  SettingsService.saveShowGroups(val);
                 },
               );
             },

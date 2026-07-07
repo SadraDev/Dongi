@@ -3,14 +3,22 @@ import 'theme/app_theme.dart';
 import 'screens/auth/auth_screen.dart';
 import 'screens/home/home_screen.dart';
 import 'services/auth_service.dart';
+import 'services/settings_service.dart';
+import './app_state.dart';
 
-final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.system);
 
 void main() async {
-  // 1. Ensure Flutter is initialized before calling async code
+  // Ensure Flutter is initialized before calling async code
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 2. Check if a token exists in secure storage
+  // Load all saved settings before starting the app
+  await SettingsService.loadSettings(
+    themeNotifier: themeNotifier,
+    friendsNotifier: showFriendsNotifier,
+    groupsNotifier: showGroupsNotifier,
+  );
+
+  // Check if a token exists in secure storage
   final bool isLoggedIn = await AuthService.isLoggedIn();
 
   runApp(DongiCloneApp(isLoggedIn: isLoggedIn));
