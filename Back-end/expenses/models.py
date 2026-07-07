@@ -19,7 +19,8 @@ class GroupMember(models.Model):
         unique_together = ('group', 'user')
 
 class Expense(models.Model):
-    group = models.ForeignKey(Group, on_delete=models.CASCADE, related_name='expenses')
+    # Allow group to be null for direct friend-to-friend expenses
+    group = models.ForeignKey(Group, on_delete=models.CASCADE, related_name='expenses', null=True, blank=True)
     payer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='paid_expenses')
     description = models.CharField(max_length=255)
     total_amount = models.DecimalField(max_digits=10, decimal_places=2)

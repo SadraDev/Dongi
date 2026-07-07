@@ -12,28 +12,23 @@ class CumulativeBalanceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final primaryColor = Theme.of(context).primaryColor;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
     final netBalance = totalOwed - totalOwe;
-
-    String netText = netBalance == 0
-        ? 'Settled up'
-        : (netBalance > 0 ? 'You are owed overall' : 'You owe overall');
 
     final Color netColor = netBalance > 0
         ? Colors.green.shade600
         : netBalance < 0
-        ? Colors.red.shade400
-        : (isDark ? Colors.grey.shade400 : Colors.grey.shade600);
+        ? theme.colorScheme.error
+        : theme.colorScheme.onSurfaceVariant;
 
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: primaryColor.withValues(alpha: isDark ? 0.12 : 0.08),
-        borderRadius: BorderRadius.circular(16),
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: primaryColor.withValues(alpha: isDark ? 0.3 : 0.2),
+          color: theme.dividerColor.withValues(alpha: 0.4),
         ),
       ),
       child: Column(
@@ -43,67 +38,66 @@ class CumulativeBalanceCard extends StatelessWidget {
             children: [
               Icon(
                 Icons.account_balance_wallet_rounded,
-                color: primaryColor.withValues(alpha: 0.7),
-                size: 18,
+                color: theme.colorScheme.primary,
+                size: 20,
               ),
               const SizedBox(width: 8),
               Text(
                 'Total Balance',
                 style: TextStyle(
-                  color: primaryColor.withValues(alpha: 0.8),
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
+                  color: theme.colorScheme.onSurfaceVariant,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           Text(
             netBalance == 0
                 ? 'Ŧ0'
                 : '${netBalance > 0 ? '+' : '-'}Ŧ${netBalance.abs().toStringAsFixed(netBalance.abs() == netBalance.abs().toInt() ? 0 : 2)}',
             style: TextStyle(
               color: netColor,
-              fontSize: 34,
-              fontWeight: FontWeight.w800,
-              letterSpacing: -1,
+              fontSize: 38,
+              fontWeight: FontWeight.w900,
+              letterSpacing: -1.5,
             ),
           ),
           const SizedBox(height: 4),
           Text(
-            netText,
+            netBalance == 0
+                ? 'Everything is settled'
+                : (netBalance > 0 ? 'Overall, you are owed' : 'Overall, you owe'),
             style: TextStyle(
-              color: isDark ? Colors.grey.shade400 : Colors.grey.shade500,
-              fontSize: 13,
+              color: theme.colorScheme.onSurfaceVariant,
+              fontSize: 14,
               fontWeight: FontWeight.w500,
             ),
           ),
-          const SizedBox(height: 20),
-          Container(
-            height: 1,
-            color: primaryColor.withValues(alpha: 0.15),
-          ),
+          const SizedBox(height: 24),
+          Divider(color: theme.dividerColor.withValues(alpha: 0.5)),
           const SizedBox(height: 16),
           Row(
             children: [
               _buildBreakdownItem(
                 icon: Icons.arrow_upward_rounded,
-                label: 'You are owed',
+                label: 'Owed to you',
                 amount: totalOwed,
                 activeColor: Colors.green.shade600,
-                isDark: isDark,
+                context: context,
               ),
               Container(
                 width: 1,
-                height: 36,
-                color: primaryColor.withValues(alpha: 0.15),
+                height: 40,
+                color: theme.dividerColor.withValues(alpha: 0.5),
               ),
               _buildBreakdownItem(
                 icon: Icons.arrow_downward_rounded,
                 label: 'You owe',
                 amount: totalOwe,
-                activeColor: Colors.red.shade400,
-                isDark: isDark,
+                activeColor: theme.colorScheme.error,
+                context: context,
               ),
             ],
           ),
@@ -117,30 +111,29 @@ class CumulativeBalanceCard extends StatelessWidget {
     required String label,
     required double amount,
     required Color activeColor,
-    required bool isDark,
+    required BuildContext context,
   }) {
+    final theme = Theme.of(context);
     final bool hasAmount = amount > 0;
-    final Color iconColor = hasAmount
-        ? activeColor.withValues(alpha: 0.7)
-        : (isDark ? Colors.grey.shade600 : Colors.grey.shade400);
-    final Color amountColor = hasAmount
-        ? activeColor
-        : (isDark ? Colors.grey.shade500 : Colors.grey.shade400);
 
     return Expanded(
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, color: iconColor, size: 16),
-          const SizedBox(width: 8),
+          Icon(
+            icon,
+            color: hasAmount ? activeColor : theme.colorScheme.onSurfaceVariant,
+            size: 18,
+          ),
+          const SizedBox(width: 10),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 label,
                 style: TextStyle(
-                  color: isDark ? Colors.grey.shade500 : Colors.grey.shade500,
-                  fontSize: 11,
+                  color: theme.colorScheme.onSurfaceVariant,
+                  fontSize: 12,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -148,9 +141,9 @@ class CumulativeBalanceCard extends StatelessWidget {
               Text(
                 'Ŧ${amount.toStringAsFixed(amount == amount.toInt() ? 0 : 2)}',
                 style: TextStyle(
-                  color: amountColor,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
+                  color: hasAmount ? activeColor : theme.colorScheme.onSurface,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
             ],

@@ -1,6 +1,6 @@
 from django.urls import path
 from .views import (
-    AcceptGroupInviteView, GroupCreateView, GroupDeleteView, 
+    AcceptGroupInviteView, FriendDetailView, GroupCreateView, GroupDeleteView, 
     GroupDetailView, GroupListView, ExpenseCreateView, ToggleExpenseSplitView,
     InviteGroupMemberView, SettleExpenseView, RejectGroupInviteView
 )
@@ -16,4 +16,5 @@ urlpatterns = [
     path('groups/<int:pk>/invite/', InviteGroupMemberView.as_view(), name='group-invite'),
     path('splits/<int:split_id>/settle/', SettleExpenseView.as_view(), name='settle-split'),
     path('groups/<int:pk>/reject/', RejectGroupInviteView.as_view(), name='group-reject'),
+    path('friends/<int:pk>/', FriendDetailView.as_view(), name='friend-detail'),
 ]

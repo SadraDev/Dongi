@@ -30,13 +30,13 @@ class _AuthScreenState extends State<AuthScreen>
     super.initState();
     _animationController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 200),
+      duration: const Duration(milliseconds: 250),
     );
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
     );
     _slideAnimation =
-        Tween<Offset>(begin: const Offset(0, 0.05), end: Offset.zero).animate(
+        Tween<Offset>(begin: const Offset(0, 0.03), end: Offset.zero).animate(
           CurvedAnimation(
             parent: _animationController,
             curve: Curves.easeOutCubic,
@@ -113,7 +113,7 @@ class _AuthScreenState extends State<AuthScreen>
       SnackBar(
         content: Row(
           children: [
-            Icon(Icons.error_rounded,
+            Icon(Icons.error_outline_rounded,
                 color: Theme.of(context).colorScheme.onError),
             const SizedBox(width: 12),
             Expanded(
@@ -126,25 +126,18 @@ class _AuthScreenState extends State<AuthScreen>
         ),
         backgroundColor: Theme.of(context).colorScheme.error,
         behavior: SnackBarBehavior.floating,
-        elevation: 0,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primaryColor = Theme.of(context).primaryColor;
-    final surfaceColor = Theme.of(context).colorScheme.surface;
-    final textColor = Theme.of(context).colorScheme.onSurface;
-    final secondaryTextColor = isDark
-        ? Colors.grey.shade400
-        : Colors.grey.shade600;
+    final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: theme.colorScheme.surface,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -157,11 +150,10 @@ class _AuthScreenState extends State<AuthScreen>
                 child: Container(
                   padding: const EdgeInsets.all(32),
                   decoration: BoxDecoration(
-                    color: surfaceColor,
-                    borderRadius: BorderRadius.circular(24),
+                    color: theme.colorScheme.surface,
+                    borderRadius: BorderRadius.circular(28),
                     border: Border.all(
-                      color: Theme.of(context).dividerColor
-                          .withValues(alpha: 0.3),
+                      color: theme.dividerColor.withValues(alpha: 0.4),
                     ),
                   ),
                   child: Form(
@@ -173,32 +165,29 @@ class _AuthScreenState extends State<AuthScreen>
                         // App Logo
                         Center(
                           child: Container(
-                            height: 72,
-                            width: 72,
+                            height: 76,
+                            width: 76,
                             decoration: BoxDecoration(
-                              color: primaryColor.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(
-                                color: primaryColor.withValues(alpha: 0.2),
-                              ),
+                              color: theme.primaryColor.withValues(alpha: 0.1),
+                              shape: BoxShape.circle,
                             ),
                             child: Icon(
                               Icons.all_inclusive_rounded,
-                              size: 36,
-                              color: primaryColor,
+                              size: 38,
+                              color: theme.primaryColor,
                             ),
                           ),
                         ),
-                        const SizedBox(height: 28),
+                        const SizedBox(height: 24),
 
                         // Title
                         Text(
                           'Dongi',
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                            fontSize: 30,
-                            fontWeight: FontWeight.w800,
-                            color: textColor,
+                            fontSize: 32,
+                            fontWeight: FontWeight.w900,
+                            color: theme.colorScheme.onSurface,
                             letterSpacing: -1,
                           ),
                         ),
@@ -216,7 +205,7 @@ class _AuthScreenState extends State<AuthScreen>
                             style: TextStyle(
                               fontSize: 15,
                               fontWeight: FontWeight.w500,
-                              color: secondaryTextColor,
+                              color: theme.colorScheme.onSurfaceVariant,
                             ),
                           ),
                         ),
@@ -226,7 +215,9 @@ class _AuthScreenState extends State<AuthScreen>
                         _buildTextField(
                           controller: _usernameController,
                           label: 'Username',
+                          hintText: 'Enter your username',
                           icon: Icons.alternate_email_rounded,
+                          theme: theme,
                           validator: (value) {
                             if (value == null || value.isEmpty) {
                               return 'Username is required';
@@ -243,14 +234,16 @@ class _AuthScreenState extends State<AuthScreen>
                         _buildTextField(
                           controller: _passwordController,
                           label: 'Password',
+                          hintText: 'Enter your password',
                           icon: Icons.lock_outline_rounded,
                           obscureText: !_isPasswordVisible,
+                          theme: theme,
                           suffixIcon: IconButton(
                             icon: Icon(
                               _isPasswordVisible
                                   ? Icons.visibility_off_rounded
                                   : Icons.visibility_rounded,
-                              color: secondaryTextColor,
+                              color: theme.colorScheme.onSurfaceVariant,
                             ),
                             onPressed: () => setState(
                                   () => _isPasswordVisible = !_isPasswordVisible,
@@ -266,18 +259,14 @@ class _AuthScreenState extends State<AuthScreen>
                             return null;
                           },
                         ),
-                        const SizedBox(height: 28),
+                        const SizedBox(height: 32),
 
                         // Action Button
                         SizedBox(
                           height: 56,
-                          child: ElevatedButton(
+                          child: FilledButton(
                             onPressed: _isLoading ? null : _submitAuth,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: primaryColor,
-                              foregroundColor:
-                              Theme.of(context).colorScheme.onPrimary,
-                              elevation: 0,
+                            style: FilledButton.styleFrom(
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(16),
                               ),
@@ -287,8 +276,7 @@ class _AuthScreenState extends State<AuthScreen>
                               width: 24,
                               height: 24,
                               child: CircularProgressIndicator(
-                                color:
-                                Theme.of(context).colorScheme.onPrimary,
+                                color: theme.colorScheme.onPrimary,
                                 strokeWidth: 2.5,
                               ),
                             )
@@ -296,8 +284,8 @@ class _AuthScreenState extends State<AuthScreen>
                               _isLogin ? 'Sign In' : 'Create Account',
                               style: const TextStyle(
                                 fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                letterSpacing: 0.3,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.2,
                               ),
                             ),
                           ),
@@ -308,14 +296,14 @@ class _AuthScreenState extends State<AuthScreen>
                         TextButton(
                           onPressed: _isLoading ? null : _switchAuthMode,
                           style: TextButton.styleFrom(
-                            foregroundColor: primaryColor,
+                            foregroundColor: theme.primaryColor,
                             splashFactory: NoSplash.splashFactory,
                           ),
                           child: RichText(
                             text: TextSpan(
                               style: TextStyle(
                                 fontSize: 14,
-                                color: secondaryTextColor,
+                                color: theme.colorScheme.onSurfaceVariant,
                                 fontWeight: FontWeight.w500,
                               ),
                               children: [
@@ -327,7 +315,7 @@ class _AuthScreenState extends State<AuthScreen>
                                 TextSpan(
                                   text: _isLogin ? "Sign up" : "Sign in",
                                   style: TextStyle(
-                                    color: primaryColor,
+                                    color: theme.primaryColor,
                                     fontWeight: FontWeight.w700,
                                   ),
                                 ),
@@ -350,7 +338,9 @@ class _AuthScreenState extends State<AuthScreen>
   Widget _buildTextField({
     required TextEditingController controller,
     required String label,
+    required String hintText,
     required IconData icon,
+    required ThemeData theme,
     bool obscureText = false,
     Widget? suffixIcon,
     String? Function(String?)? validator,
@@ -361,57 +351,50 @@ class _AuthScreenState extends State<AuthScreen>
       validator: validator,
       style: TextStyle(
         fontSize: 15,
-        fontWeight: FontWeight.w500,
-        color: Theme.of(context).colorScheme.onSurface,
+        fontWeight: FontWeight.w600,
+        color: theme.colorScheme.onSurface,
       ),
       decoration: InputDecoration(
         labelText: label,
+        hintText: hintText,
         labelStyle: TextStyle(
-          color: Theme.of(context).brightness == Brightness.dark
-              ? Colors.grey.shade500
-              : Colors.grey.shade600,
+          fontSize: 14,
+          color: theme.colorScheme.onSurfaceVariant,
           fontWeight: FontWeight.w500,
         ),
-        prefixIcon: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-          child: Icon(icon,
-              color: Theme.of(context).brightness == Brightness.dark
-                  ? Colors.grey.shade500
-                  : Colors.grey.shade500),
+        hintStyle: TextStyle(
+          fontSize: 14,
+          color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+          fontWeight: FontWeight.w400,
+        ),
+        prefixIcon: Icon(
+          icon,
+          color: theme.colorScheme.onSurfaceVariant,
         ),
         suffixIcon: suffixIcon,
+        floatingLabelBehavior: FloatingLabelBehavior.always,
         filled: true,
-        fillColor: Theme.of(context).brightness == Brightness.dark
-            ? Colors.grey.shade800
-            : Colors.grey.shade100,
+        fillColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(
-            color: Theme.of(context).dividerColor.withValues(alpha: 0.3),
-          ),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(
-            color: Theme.of(context).dividerColor.withValues(alpha: 0.3),
-          ),
+          borderRadius: BorderRadius.circular(24),
+          borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(24),
           borderSide: BorderSide(
-            color: Theme.of(context).primaryColor,
-            width: 1.5,
+            color: theme.primaryColor,
+            width: 2,
           ),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: Color(0xFFE63946), width: 1),
+          borderRadius: BorderRadius.circular(24),
+          borderSide: BorderSide(color: theme.colorScheme.error, width: 1),
         ),
         focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: Color(0xFFE63946), width: 1.5),
+          borderRadius: BorderRadius.circular(24),
+          borderSide: BorderSide(color: theme.colorScheme.error, width: 2),
         ),
-        contentPadding: const EdgeInsets.symmetric(vertical: 18),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
       ),
     );
   }

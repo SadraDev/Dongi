@@ -62,6 +62,25 @@ class FriendService {
 
   static Future<void> removeFriend(int friendshipId) async {
     final options = await _getAuthOptions();
-    await _dio.delete('/friends/remove/$friendshipId/', options: options);
+    try {
+      await _dio.delete('/friends/remove/$friendshipId/', options: options);
+    } on DioException catch (e) {
+      if (e.response != null && e.response!.data is Map) {
+        final data = e.response!.data;
+        if (data['error'] != null) {
+          throw Exception(data['error']);
+        }
+      }
+      throw Exception('An unexpected error occurred while removing friend.');
+    }
+  }
+
+  static Future<Map<String, dynamic>> getFriendDetails(int friendId) async {
+    final token = await AuthService.getToken();
+    final response = await _dio.get(
+      '/expenses/friends/$friendId/',
+      options: Options(headers: {'Authorization': 'Token $token'}),
+    );
+    return response.data;
   }
 }

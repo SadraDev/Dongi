@@ -12,19 +12,54 @@ class NotificationsScreen extends StatefulWidget {
 }
 
 class _NotificationsScreenState extends State<NotificationsScreen> {
-  late Future<List<dynamic>> _notificationsFuture;
+  bool _isLoading = true;
+  String? _errorMessage;
+  List<dynamic> _notifications = [];
+
   final Set<int> _processingIds = {};
 
   @override
   void initState() {
     super.initState();
-    _refreshNotifications();
+    _fetchNotifications();
   }
 
-  void _refreshNotifications() {
+  Future<void> _fetchNotifications() async {
     setState(() {
-      _notificationsFuture = NotificationService.fetchNotifications();
+      _isLoading = true;
+      _errorMessage = null;
     });
+
+    try {
+      final items = await NotificationService.fetchNotifications();
+      if (mounted) {
+        setState(() {
+          _notifications = items;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = e.toString();
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _refreshNotifications() async {
+    // Hidden refresh without triggering the full loading state
+    try {
+      final items = await NotificationService.fetchNotifications();
+      if (mounted) {
+        setState(() {
+          _notifications = items;
+        });
+      }
+    } catch (e) {
+      debugPrint('Refresh failed: $e');
+    }
   }
 
   void _showSuccessSnackBar(String message) {
@@ -33,14 +68,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       SnackBar(
         content: Row(
           children: [
-            Icon(Icons.check_circle_outline, color: Colors.white),
-            SizedBox(width: 12),
+            const Icon(Icons.check_circle_rounded, color: Colors.white),
+            const SizedBox(width: 12),
             Expanded(child: Text(message)),
           ],
         ),
         backgroundColor: Colors.green.shade600,
         behavior: SnackBarBehavior.floating,
-        elevation: 0,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       ),
@@ -53,14 +87,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       SnackBar(
         content: Row(
           children: [
-            Icon(Icons.error_outline, color: Colors.white),
-            SizedBox(width: 12),
+            const Icon(Icons.error_outline_rounded, color: Colors.white),
+            const SizedBox(width: 12),
             Expanded(child: Text(message)),
           ],
         ),
-        backgroundColor: Colors.red.shade700,
+        backgroundColor: Theme.of(context).colorScheme.error,
         behavior: SnackBarBehavior.floating,
-        elevation: 0,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       ),
@@ -170,100 +203,121 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Notifications',
-            style: TextStyle(fontWeight: FontWeight.w700)),
-        elevation: 0,
-      ),
-      body: RefreshIndicator(
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _errorMessage != null
+          ? _buildErrorState()
+          : RefreshIndicator(
         color: Theme.of(context).primaryColor,
-        onRefresh: () async => _refreshNotifications(),
-        child: FutureBuilder<List<dynamic>>(
-          future: _notificationsFuture,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
-            }
+        onRefresh: _refreshNotifications,
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(
+            parent: BouncingScrollPhysics(),
+          ),
+          slivers: [
+            _buildSliverAppBar(),
+            _buildBodyContent(),
+          ],
+        ),
+      ),
+    );
+  }
 
-            if (snapshot.hasError) {
-              return _buildErrorState(snapshot.error.toString());
-            }
+  SliverAppBar _buildSliverAppBar() {
+    return SliverAppBar.large(
+      pinned: true,
+      stretch: true,
+      expandedHeight: 140,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      flexibleSpace: FlexibleSpaceBar(
+        titlePadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        title: Text(
+          'Notifications',
+          style: TextStyle(
+            fontWeight: FontWeight.w800,
+            color: Theme.of(context).colorScheme.onSurface,
+            letterSpacing: -0.5,
+          ),
+        ),
+        background: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Theme.of(context).primaryColor.withValues(alpha: 0.1),
+                Theme.of(context).colorScheme.surface,
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 
-            if (!snapshot.hasData || snapshot.data!.isEmpty) {
-              return _buildEmptyState();
-            }
+  Widget _buildBodyContent() {
+    if (_notifications.isEmpty) {
+      return SliverFillRemaining(
+        hasScrollBody: false,
+        child: _buildEmptyState(),
+      );
+    }
 
-            final items = snapshot.data!;
-            return ListView.builder(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-              itemCount: items.length,
-              itemBuilder: (context, index) {
-                return _buildNotificationCard(items[index]);
-              },
-            );
+    return SliverPadding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 40),
+      sliver: SliverList(
+        delegate: SliverChildBuilderDelegate(
+              (context, index) {
+            return _buildNotificationCard(_notifications[index]);
           },
+          childCount: _notifications.length,
         ),
       ),
     );
   }
 
   Widget _buildEmptyState() {
-    return ListView(
-      children: [
-        SizedBox(
-          height: MediaQuery.of(context).size.height * 0.6,
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).brightness == Brightness.dark
-                        ? Colors.grey.shade800
-                        : Colors.grey.shade100,
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: Theme.of(context).dividerColor.withValues(alpha: 0.3),
-                    ),
-                  ),
-                  child: Icon(
-                    Icons.notifications_none_rounded,
-                    size: 52,
-                    color: Theme.of(context).brightness == Brightness.dark
-                        ? Colors.grey.shade600
-                        : Colors.grey.shade400,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Text(
-                  'All caught up!',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                    color: Theme.of(context).colorScheme.onSurface,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'You have no new notifications right now.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Theme.of(context).brightness == Brightness.dark
-                        ? Colors.grey.shade500
-                        : Colors.grey.shade500,
-                  ),
-                ),
-              ],
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.notifications_none_rounded,
+              size: 56,
+              color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
             ),
           ),
-        ),
-      ],
+          const SizedBox(height: 24),
+          Text(
+            'All caught up!',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'You have no new notifications right now.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 16,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
-  Widget _buildErrorState(String error) {
+  Widget _buildErrorState() {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -271,35 +325,41 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: Colors.red.shade50,
+                color: Theme.of(context).colorScheme.errorContainer,
                 shape: BoxShape.circle,
-                border: Border.all(color: Colors.red.shade200),
               ),
               child: Icon(
                 Icons.error_outline_rounded,
-                size: 44,
-                color: Colors.red.shade300,
-              ),
-            ),
-            const SizedBox(height: 20),
-            Text(
-              'Failed to load',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: Theme.of(context).colorScheme.onSurface,
+                size: 48,
+                color: Theme.of(context).colorScheme.onErrorContainer,
               ),
             ),
             const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: _refreshNotifications,
-              icon: const Icon(Icons.refresh_rounded, size: 18),
+            Text(
+              'Failed to load',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              _errorMessage ?? 'Something went wrong.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 32),
+            FilledButton.icon(
+              onPressed: _fetchNotifications,
+              icon: const Icon(Icons.refresh_rounded),
               label: const Text('Try Again'),
-              style: ElevatedButton.styleFrom(
-                elevation: 0,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+              style: FilledButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
               ),
             ),
           ],
@@ -318,36 +378,34 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     final bool isActionable = type == 'friend_request' || type == 'group_invite';
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.only(bottom: 12),
       child: AnimatedOpacity(
         duration: const Duration(milliseconds: 200),
         opacity: isProcessing ? 0.5 : 1.0,
-        child: Container(
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: Theme.of(context).dividerColor.withValues(alpha: 0.3),
+        child: Card(
+          elevation: 0,
+          color: Theme.of(context).colorScheme.surface,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+            side: BorderSide(
+              color: Theme.of(context).dividerColor.withValues(alpha: 0.4),
             ),
           ),
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(20),
             child: Row(
               children: [
                 // Colored Icon Box
                 Container(
-                  width: 44,
-                  height: 44,
+                  width: 52,
+                  height: 52,
                   decoration: BoxDecoration(
                     color: iconColor.withValues(alpha: isDark ? 0.15 : 0.1),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: iconColor.withValues(alpha: isDark ? 0.25 : 0.15),
-                    ),
+                    shape: BoxShape.circle,
                   ),
-                  child: Icon(icon, color: iconColor, size: 22),
+                  child: Icon(icon, color: iconColor, size: 24),
                 ),
-                const SizedBox(width: 14),
+                const SizedBox(width: 16),
 
                 // Text Content
                 Expanded(
@@ -356,22 +414,21 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     children: [
                       Text(
                         item['message'] ?? 'New notification',
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontWeight: FontWeight.w600,
-                          fontSize: 14,
+                          fontSize: 15,
                           height: 1.3,
-                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 6),
                       Text(
                         _formatDate(item['created_at']?.toString() ?? ''),
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: 13,
                           fontWeight: FontWeight.w500,
-                          color: isDark ? Colors.grey.shade500 : Colors.grey.shade400,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ],
@@ -380,16 +437,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
                 // Action Buttons
                 if (isActionable) ...[
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 12),
                   _ActionButton(
                     icon: Icons.close_rounded,
-                    color: Colors.red.shade400,
-                    bgColor: isDark
-                        ? Colors.red.shade900.withValues(alpha: 0.2)
-                        : Colors.red.shade50,
-                    borderColor: isDark
-                        ? Colors.red.shade800.withValues(alpha: 0.3)
-                        : Colors.red.shade200,
+                    color: Theme.of(context).colorScheme.error,
+                    bgColor: Theme.of(context).colorScheme.errorContainer.withValues(alpha: 0.5),
                     isLoading: isProcessing,
                     onTap: isProcessing ? null : () {
                       HapticFeedback.lightImpact();
@@ -399,13 +451,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   const SizedBox(width: 8),
                   _ActionButton(
                     icon: Icons.check_rounded,
-                    color: Colors.green.shade600,
-                    bgColor: isDark
-                        ? Colors.green.shade900.withValues(alpha: 0.2)
-                        : Colors.green.shade50,
-                    borderColor: isDark
-                        ? Colors.green.shade800.withValues(alpha: 0.3)
-                        : Colors.green.shade200,
+                    color: Colors.green.shade700,
+                    bgColor: Colors.green.withValues(alpha: isDark ? 0.2 : 0.15),
                     isLoading: isProcessing,
                     onTap: isProcessing ? null : () {
                       HapticFeedback.lightImpact();
@@ -413,12 +460,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     },
                   ),
                 ] else ...[
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 12),
                   _ActionButton(
                     icon: Icons.close_rounded,
-                    color: Colors.grey.shade400,
-                    bgColor: isDark ? Colors.grey.shade700 : Colors.grey.shade100,
-                    borderColor: isDark ? Colors.grey.shade600 : Colors.grey.shade300,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    bgColor: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
                     isLoading: isProcessing,
                     onTap: isProcessing ? null : () {
                       HapticFeedback.lightImpact();
@@ -450,13 +496,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   Color _getIconColor(String type) {
     switch (type) {
       case 'friend_request':
-        return Colors.blue;
+        return Colors.blue.shade600;
       case 'group_invite':
         return Colors.green.shade600;
       case 'payment_reminder':
-        return Colors.orange.shade700;
+        return Colors.orange.shade600;
       default:
-        return Colors.grey;
+        return Colors.grey.shade600;
     }
   }
 }
@@ -465,7 +511,6 @@ class _ActionButton extends StatelessWidget {
   final IconData icon;
   final Color color;
   final Color bgColor;
-  final Color borderColor;
   final bool isLoading;
   final VoidCallback? onTap;
 
@@ -473,7 +518,6 @@ class _ActionButton extends StatelessWidget {
     required this.icon,
     required this.color,
     required this.bgColor,
-    required this.borderColor,
     required this.isLoading,
     this.onTap,
   });
@@ -483,29 +527,24 @@ class _ActionButton extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(24),
         onTap: onTap,
         child: Container(
-          width: 36,
-          height: 36,
+          width: 44,
+          height: 44,
           decoration: BoxDecoration(
             color: bgColor,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: borderColor),
+            shape: BoxShape.circle,
           ),
           child: isLoading
               ? Padding(
-            padding: const EdgeInsets.all(10),
-            child: SizedBox(
-              width: 16,
-              height: 16,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: color,
-              ),
+            padding: const EdgeInsets.all(12),
+            child: CircularProgressIndicator(
+              strokeWidth: 2.5,
+              color: color,
             ),
           )
-              : Icon(icon, size: 18, color: color),
+              : Icon(icon, size: 20, color: color),
         ),
       ),
     );

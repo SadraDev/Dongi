@@ -161,7 +161,7 @@ class AuthService {
         e.type == DioExceptionType.receiveTimeout) {
       return 'Connection timed out. Check your server.';
     } else if (e.type == DioExceptionType.connectionError) {
-      return 'Cannot connect to the server. Is Django running?';
+      return 'Cannot connect to the server.';
     }
 
     return 'Authentication failed. Please try again.';

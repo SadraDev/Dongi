@@ -6,8 +6,12 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
-from django.db.models import Sum
+from django.db.models import Sum, Q
+from django.contrib.auth import get_user_model
+from users.models import Friendship
 
+
+User = get_user_model()
 
 class GroupListView(generics.ListAPIView):
     serializer_class = GroupSerializer
@@ -137,10 +141,13 @@ class ExpenseCreateView(APIView):
 
     def post(self, request):
         group_id = request.data.get('group')
-        group = get_object_or_404(Group, pk=group_id)
-
-        if not GroupMember.objects.filter(group=group, user=request.user, status='accepted').exists():
-            return Response({"error": "You are not an active member of this group."}, status=403)
+        group = None
+        
+        # Determine if this is a group expense or a direct friend expense
+        if group_id:
+            group = get_object_or_404(Group, pk=group_id)
+            if not GroupMember.objects.filter(group=group, user=request.user, status='accepted').exists():
+                return Response({"error": "You are not an active member of this group."}, status=403)
 
         description = request.data.get('description', '')
         total_amount = float(request.data.get('total_amount', 0))
@@ -154,24 +161,32 @@ class ExpenseCreateView(APIView):
         )
 
         if divide_equally:
-            active_memberships = GroupMember.objects.filter(group=group, status='accepted')
-            member_count = active_memberships.count()
+            if group:
+                active_memberships = GroupMember.objects.filter(group=group, status='accepted')
+                member_users = [m.user for m in active_memberships]
+            else:
+                # Handle direct friend expense logic
+                friend_id = request.data.get('friend_id')
+                if not friend_id:
+                    return Response({"error": "friend_id is required for direct splits"}, status=400)
+                friend = get_object_or_404(User, pk=friend_id)
+                member_users = [request.user, friend]
+
+            member_count = len(member_users)
             if member_count > 0:
                 amount_owed = total_amount / member_count
-                for membership in active_memberships:
-                    # FIX: Mark the payer as is_paid=True
+                for u in member_users:
                     ExpenseSplit.objects.create(
                         expense=expense,
-                        user=membership.user,
+                        user=u,
                         amount_owed=amount_owed,
-                        is_paid=(membership.user == request.user)
+                        is_paid=(u == request.user)
                     )
         else:
             custom_splits = request.data.get('custom_splits', [])
             for split in custom_splits:
                 user_id = split.get('user_id')
                 amount = float(split.get('amount_owed', 0))
-                # FIX: Mark the payer as is_paid=True
                 ExpenseSplit.objects.create(
                     expense=expense,
                     user_id=user_id,
@@ -196,10 +211,6 @@ class ToggleExpenseSplitView(APIView):
             return Response({"status": "Updated", "is_paid": split.is_paid})
         return Response({"error": "Missing 'is_paid' field."}, status=400)
 
-
-from django.contrib.auth import get_user_model
-User = get_user_model()
-
 class InviteGroupMemberView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -214,10 +225,11 @@ class InviteGroupMemberView(APIView):
         if not username:
             return Response({"error": "Username field is required."}, status=400)
             
-        # Check if user exists before doing anything else
-        try:
-            invited_user = User.objects.get(username__iexact=username)
-        except User.DoesNotExist:
+        # Check if user exists using python-side strict exact matching to avoid MultipleObjectsReturned
+        matched_users = User.objects.filter(username__iexact=username)
+        invited_user = next((u for u in matched_users if u.username == username), None)
+        
+        if not invited_user:
             return Response({"error": "User does not exist"}, status=400)
         
         # Check 1: Are they already an accepted member?
@@ -252,4 +264,78 @@ class SettleExpenseView(APIView):
         return Response({
             "status": "success", 
             "is_paid": split.is_paid
+        })
+
+class FriendDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk):
+        
+        User = get_user_model()
+        friend = get_object_or_404(User, pk=pk)
+        user = request.user
+
+        # Security Check: Ensure they are actually friends
+        if not Friendship.objects.filter(
+            (Q(sender=user, receiver=friend) | Q(sender=friend, receiver=user)), 
+            status='accepted'
+        ).exists():
+            return Response({"error": "You are not friends with this user."}, status=403)
+
+        # 1. Calculate Net Balance
+        owed_to_me = ExpenseSplit.objects.filter(
+            expense__payer=user,
+            user=friend,
+            is_paid=False
+        ).aggregate(total=Sum('amount_owed'))['total'] or 0.0
+
+        owed_by_me = ExpenseSplit.objects.filter(
+            expense__payer=friend,
+            user=user,
+            is_paid=False
+        ).aggregate(total=Sum('amount_owed'))['total'] or 0.0
+
+        balance = float(owed_to_me) - float(owed_by_me)
+
+        # 2. Fetch Common Expenses (Direct & In-Group)
+        expenses_data = []
+        common_expenses = Expense.objects.filter(
+            Q(payer=user, splits__user=friend) | Q(payer=friend, splits__user=user)
+        ).distinct().order_by('-created_at')
+
+        for exp in common_expenses:
+            paid_by_me = (exp.payer == user)
+            
+            splits_data = []
+            for split in exp.splits.filter(user__in=[user, friend]):
+                # Only include splits where the user owes money
+                if split.user == exp.payer:
+                    continue
+                    
+                splits_data.append({
+                    "id": split.id,
+                    "user": split.user.id,
+                    "name": "You" if split.user == user else split.user.username,
+                    "amount": float(split.amount_owed),
+                    "isPaid": split.is_paid
+                })
+
+            if splits_data:
+                expenses_data.append({
+                    "id": exp.id,
+                    "title": exp.description,
+                    "amount": float(exp.total_amount),
+                    "paidByMe": paid_by_me,
+                    "payerName": "You" if paid_by_me else exp.payer.username,
+                    "groupName": exp.group.name if exp.group else "Direct Expense",
+                    "splits": splits_data
+                })
+
+        return Response({
+            "friend": {
+                "id": friend.id,
+                "name": friend.username,
+                "balance": balance
+            },
+            "expenses": expenses_data
         })

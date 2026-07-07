@@ -1,27 +1,17 @@
 from rest_framework import serializers
 from django.db.models import Sum
 from django.contrib.auth import get_user_model
-from django.core.exceptions import ObjectDoesNotExist
 from .models import Group, GroupMember
 from django.db import models
 
 User = get_user_model()
 
-class CaseInsensitiveSlugRelatedField(serializers.SlugRelatedField):
-    """Custom field that performs case-insensitive lookups"""
-    def to_internal_value(self, data):
-        try:
-            return self.get_queryset().get(**{self.slug_field + '__iexact': data})
-        except ObjectDoesNotExist:
-            self.fail('does_not_exist', slug_name=self.slug_field, value=repr(data))
-        except (TypeError, ValueError):
-            self.fail('invalid')
-
 class GroupSerializer(serializers.ModelSerializer):
     balance = serializers.SerializerMethodField()
     total_owed = serializers.SerializerMethodField()
     total_owe = serializers.SerializerMethodField()
-    members = CaseInsensitiveSlugRelatedField(
+    # Replaced custom CaseInsensitive field with the standard strict-matching field
+    members = serializers.SlugRelatedField(
         many=True, queryset=User.objects.all(), slug_field='username', required=False
     )
 

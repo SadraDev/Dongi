@@ -3,14 +3,16 @@ import 'package:flutter/services.dart';
 import '../../services/group_service.dart';
 
 class AddPaymentScreen extends StatefulWidget {
-  final int groupId;
+  final int? groupId;
+  final int? friendId;
   final String groupName;
   final List<dynamic> members;
   final int currentUserId;
 
   const AddPaymentScreen({
     super.key,
-    required this.groupId,
+    this.groupId,
+    this.friendId,
     required this.groupName,
     required this.members,
     required this.currentUserId,
@@ -152,7 +154,7 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
 
       if ((splitSum - totalAmount).abs() > 0.01) {
         _showError(
-          'Splits total (T${splitSum.toStringAsFixed(2)}) doesn\'t match amount (T${totalAmount.toStringAsFixed(2)})',
+          'Splits total (Ŧ${splitSum.toStringAsFixed(2)}) doesn\'t match amount (Ŧ${totalAmount.toStringAsFixed(2)})',
         );
         return;
       }
@@ -163,6 +165,7 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
     try {
       await GroupService.addExpense(
         groupId: widget.groupId,
+        friendId: widget.friendId,
         description: description,
         totalAmount: totalAmount,
         divideEqually: _divideEqually,
@@ -187,14 +190,13 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
       SnackBar(
         content: Row(
           children: [
-            const Icon(Icons.error_outline, color: Colors.white),
+            const Icon(Icons.error_outline_rounded, color: Colors.white),
             const SizedBox(width: 12),
             Expanded(child: Text(message)),
           ],
         ),
-        backgroundColor: Colors.red.shade700,
+        backgroundColor: Theme.of(context).colorScheme.error,
         behavior: SnackBarBehavior.floating,
-        elevation: 0,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       ),
@@ -203,105 +205,100 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
 
     return Scaffold(
+      backgroundColor: theme.colorScheme.surface,
       appBar: AppBar(
-        title: const Text('Add Expense'),
+        title: const Text(
+          'Add Expense',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        backgroundColor: theme.colorScheme.surface,
         elevation: 0,
+        centerTitle: true,
       ),
       body: SingleChildScrollView(
         controller: _scrollController,
         physics: const BouncingScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(
-          16, 16, 16, 100,
-        ),
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Group name pill
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(
-                  color: Theme.of(context).primaryColor.withValues(alpha: 0.15),
+            Center(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: theme.primaryColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      widget.groupId != null ? Icons.groups_rounded : Icons.person_rounded,
+                      size: 18,
+                      color: theme.primaryColor,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      widget.groupName,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: theme.primaryColor,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.group_rounded,
-                    size: 16,
-                    color: Theme.of(context).primaryColor,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    widget.groupName,
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: Theme.of(context).primaryColor,
-                    ),
-                  ),
-                ],
-              ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 32),
 
             // Amount Field
             TextField(
               controller: _amountController,
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-              ),
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
               onChanged: (_) => setState(() {}),
               style: TextStyle(
-                fontSize: 36,
-                fontWeight: FontWeight.w800,
+                fontSize: 40,
+                fontWeight: FontWeight.w900,
                 letterSpacing: -1,
-                color: Theme.of(context).colorScheme.onSurface,
+                color: theme.colorScheme.onSurface,
               ),
               decoration: InputDecoration(
-                prefixText: 'T ',
+                prefixText: 'Ŧ ',
                 prefixStyle: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w600,
-                  color: isDark ? Colors.grey.shade500 : Colors.grey.shade500,
+                  fontSize: 32,
+                  fontWeight: FontWeight.w700,
+                  color: theme.colorScheme.onSurfaceVariant,
                 ),
                 labelText: 'Amount',
                 labelStyle: TextStyle(
                   fontSize: 14,
-                  color: isDark ? Colors.grey.shade500 : Colors.grey.shade400,
+                  fontWeight: FontWeight.w500,
+                  color: theme.colorScheme.onSurfaceVariant,
                 ),
                 floatingLabelBehavior: FloatingLabelBehavior.always,
                 filled: true,
-                fillColor: isDark ? Colors.grey.shade800 : Colors.grey.shade100,
+                fillColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide(
-                    color: Theme.of(context).dividerColor.withValues(alpha: 0.3),
-                  ),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide(
-                    color: Theme.of(context).dividerColor.withValues(alpha: 0.3),
-                  ),
+                  borderRadius: BorderRadius.circular(24),
+                  borderSide: BorderSide.none,
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(24),
                   borderSide: BorderSide(
-                    color: Theme.of(context).primaryColor,
-                    width: 1.5,
+                    color: theme.primaryColor,
+                    width: 2,
                   ),
                 ),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
               ),
               enabled: !_isSaving,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
 
             // Description Field
             TextField(
@@ -309,49 +306,42 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
               decoration: InputDecoration(
                 labelText: 'Description',
                 hintText: 'e.g., Dinner at Mario\'s',
-                prefixIcon: const Icon(Icons.receipt_long_outlined, size: 20),
+                prefixIcon: Icon(
+                  Icons.receipt_long_rounded,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
                 filled: true,
-                fillColor: isDark ? Colors.grey.shade800 : Colors.grey.shade100,
+                fillColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide(
-                    color: Theme.of(context).dividerColor.withValues(alpha: 0.3),
-                  ),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide(
-                    color: Theme.of(context).dividerColor.withValues(alpha: 0.3),
-                  ),
+                  borderSide: BorderSide.none,
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
                   borderSide: BorderSide(
-                    color: Theme.of(context).primaryColor,
-                    width: 1.5,
+                    color: theme.primaryColor,
+                    width: 2,
                   ),
                 ),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               ),
               textCapitalization: TextCapitalization.sentences,
               enabled: !_isSaving,
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 32),
 
             // Split Type Toggle (Segmented Control)
             Container(
               padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
-                color: isDark ? Colors.grey.shade800 : Colors.grey.shade100,
+                color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: Theme.of(context).dividerColor.withValues(alpha: 0.3),
-                ),
               ),
               child: Row(
                 children: [
                   _buildSplitTypeButton(
                     label: 'Equal Split',
-                    icon: Icons.equalizer_rounded,
+                    icon: Icons.pie_chart_outline_rounded,
                     isSelected: _divideEqually,
                     onTap: _isSaving
                         ? null
@@ -387,8 +377,8 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
 
             // Custom Splits
             if (!_divideEqually) ...[
-              const SizedBox(height: 20),
-              _buildCustomSplitsSection(),
+              const SizedBox(height: 24),
+              _buildCustomSplitsSection(theme),
             ],
 
             const SizedBox(height: 20),
@@ -407,10 +397,13 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
           ),
         )
             : const Icon(Icons.check_rounded),
-        label: Text(_isSaving ? 'Saving...' : 'Save Expense'),
+        label: Text(
+          _isSaving ? 'Saving...' : 'Save Expense',
+          style: const TextStyle(fontWeight: FontWeight.w700),
+        ),
         elevation: 0,
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
 
@@ -420,6 +413,8 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
     required bool isSelected,
     required VoidCallback? onTap,
   }) {
+    final theme = Theme.of(context);
+
     return Expanded(
       child: Material(
         color: Colors.transparent,
@@ -430,9 +425,7 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
             duration: const Duration(milliseconds: 200),
             padding: const EdgeInsets.symmetric(vertical: 14),
             decoration: BoxDecoration(
-              color: isSelected
-                  ? Theme.of(context).primaryColor
-                  : Colors.transparent,
+              color: isSelected ? theme.primaryColor : Colors.transparent,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
@@ -442,22 +435,18 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
                   icon,
                   size: 18,
                   color: isSelected
-                      ? Theme.of(context).colorScheme.onPrimary
-                      : (Theme.of(context).brightness == Brightness.dark
-                      ? Colors.grey.shade500
-                      : Colors.grey.shade500),
+                      ? theme.colorScheme.onPrimary
+                      : theme.colorScheme.onSurfaceVariant,
                 ),
                 const SizedBox(width: 8),
                 Text(
                   label,
                   style: TextStyle(
-                    fontSize: 13,
+                    fontSize: 14,
                     fontWeight: FontWeight.w600,
                     color: isSelected
-                        ? Theme.of(context).colorScheme.onPrimary
-                        : (Theme.of(context).brightness == Brightness.dark
-                        ? Colors.grey.shade500
-                        : Colors.grey.shade500),
+                        ? theme.colorScheme.onPrimary
+                        : theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
               ],
@@ -468,167 +457,135 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
     );
   }
 
-  Widget _buildCustomSplitsSection() {
+  Widget _buildCustomSplitsSection(ThemeData theme) {
     final totalAmount = double.tryParse(_amountController.text.trim()) ?? 0;
     final totalSplits = _getTotalSplits();
     final difference = totalAmount - totalSplits;
     final isBalanced = difference.abs() < 0.01 && totalAmount > 0;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            const Text(
-              'Custom Split',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+            Text(
+              'Split Details',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
             const Spacer(),
             if (totalAmount > 0)
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
                   color: isBalanced
-                      ? Colors.green.withValues(alpha: isDark ? 0.15 : 0.1)
+                      ? Colors.green.withValues(alpha: 0.1)
                       : difference < 0
-                      ? Colors.red.withValues(alpha: isDark ? 0.15 : 0.1)
-                      : Colors.orange.withValues(alpha: isDark ? 0.15 : 0.1),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: isBalanced
-                        ? Colors.green.withValues(alpha: 0.3)
-                        : difference < 0
-                        ? Colors.red.withValues(alpha: 0.3)
-                        : Colors.orange.withValues(alpha: 0.3),
-                  ),
+                      ? theme.colorScheme.errorContainer
+                      : Colors.orange.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
                   isBalanced
                       ? 'Balanced'
                       : difference < 0
-                      ? 'Math == 👌'
-                      : 'Remaining: T${difference.toStringAsFixed(2)}',
+                      ? 'Math = 👌'
+                      : 'Remaining: Ŧ${difference.toStringAsFixed(2)}',
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
                     color: isBalanced
                         ? Colors.green.shade700
                         : difference < 0
-                        ? Colors.red.shade700
+                        ? Colors.white
                         : Colors.orange.shade700,
                   ),
                 ),
               ),
           ],
         ),
-        const SizedBox(height: 12),
-        ..._allMembers.map((member) => _buildCustomSplitRow(member)),
+        const SizedBox(height: 16),
+        ..._allMembers.map((member) => _buildCustomSplitRow(member, theme)),
       ],
     );
   }
 
-  Widget _buildCustomSplitRow(Map<String, dynamic> member) {
+  Widget _buildCustomSplitRow(Map<String, dynamic> member, ThemeData theme) {
     final int userId = member['id'];
     final String name = member['name'];
     final bool isYou = name == 'You';
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final autoHint = _getAutoSplitHint(userId);
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.only(bottom: 12),
       child: Row(
         children: [
-          // Avatar
-          Container(
-            alignment: Alignment.center,
-            width: 38,
-            height: 38,
-            decoration: BoxDecoration(
-              color: isYou
-                  ? Theme.of(context).primaryColor.withValues(alpha: 0.1)
-                  : (isDark ? Colors.grey.shade800 : Colors.grey.shade200),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: isYou
-                    ? Theme.of(context).primaryColor.withValues(alpha: 0.15)
-                    : Theme.of(context).dividerColor.withValues(alpha: 0.3),
-              ),
-            ),
+          CircleAvatar(
+            radius: 20,
+            backgroundColor: isYou
+                ? theme.primaryColor.withValues(alpha: 0.2)
+                : theme.colorScheme.secondaryContainer,
             child: Text(
               name[0].toUpperCase(),
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 color: isYou
-                    ? Theme.of(context).primaryColor
-                    : (isDark ? Colors.grey.shade400 : Colors.grey.shade600),
+                    ? theme.primaryColor
+                    : theme.colorScheme.onSecondaryContainer,
                 fontSize: 15,
               ),
             ),
           ),
-          const SizedBox(width: 12),
-
-          // Name
+          const SizedBox(width: 14),
           Expanded(
             child: Text(
               name,
               style: TextStyle(
                 fontSize: 15,
-                fontWeight: isYou ? FontWeight.w700 : FontWeight.w500,
-                color: Theme.of(context).colorScheme.onSurface,
+                fontWeight: isYou ? FontWeight.w700 : FontWeight.w600,
+                color: theme.colorScheme.onSurface,
               ),
             ),
           ),
-
-          // Amount Input
           SizedBox(
-            width: 110,
+            width: 120,
             child: TextField(
               controller: _customSplitControllers[userId],
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-              ),
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
               textAlign: TextAlign.end,
               onChanged: (_) => setState(() {}),
               style: TextStyle(
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w700,
                 fontSize: 15,
-                color: Theme.of(context).colorScheme.onSurface,
+                color: theme.colorScheme.onSurface,
               ),
               decoration: InputDecoration(
-                prefixText: 'T ',
+                prefixText: 'Ŧ ',
                 prefixStyle: TextStyle(
-                  color: isDark ? Colors.grey.shade500 : Colors.grey.shade500,
-                  fontWeight: FontWeight.w500,
+                  color: theme.colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w600,
                 ),
                 hintText: autoHint != null ? autoHint : '0.0',
                 hintStyle: TextStyle(
                   color: autoHint != null
-                      ? Theme.of(context).primaryColor.withValues(alpha: 0.5)
-                      : (isDark ? Colors.grey.shade700 : Colors.grey.shade300),
+                      ? theme.primaryColor.withValues(alpha: 0.6)
+                      : theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
                 ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 12, vertical: 10,
-                ),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                 filled: true,
-                fillColor: isDark ? Colors.grey.shade800 : Colors.grey.shade100,
+                fillColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: BorderSide(
-                    color: Theme.of(context).dividerColor.withValues(alpha: 0.3),
-                  ),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: BorderSide(
-                    color: Theme.of(context).dividerColor.withValues(alpha: 0.3),
-                  ),
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide(
-                    color: Theme.of(context).primaryColor,
-                    width: 1.5,
+                    color: theme.primaryColor,
+                    width: 2,
                   ),
                 ),
               ),

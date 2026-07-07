@@ -68,22 +68,28 @@ class GroupService {
   }
 
   static Future<void> addExpense({
-    required int groupId,
+    int? groupId,
+    int? friendId,
     required String description,
     required double totalAmount,
     required bool divideEqually,
     List<Map<String, dynamic>>? customSplits,
   }) async {
     final token = await AuthService.getToken();
+
+    final Map<String, dynamic> data = {
+      'description': description,
+      'total_amount': totalAmount,
+      'divide_equally': divideEqually,
+      'custom_splits': customSplits,
+    };
+
+    if (groupId != null) data['group'] = groupId;
+    if (friendId != null) data['friend_id'] = friendId;
+
     await _dio.post(
       '/expenses/expenses/create/',
-      data: {
-        'group': groupId,
-        'description': description,
-        'total_amount': totalAmount,
-        'divide_equally': divideEqually,
-        'custom_splits': customSplits,
-      },
+      data: data,
       options: Options(headers: {'Authorization': 'Token $token'}),
     );
   }

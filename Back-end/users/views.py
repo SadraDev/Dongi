@@ -5,10 +5,12 @@ from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
 from .serializers import RegisterSerializer, LoginSerializer, UserSerializer
 from rest_framework.views import APIView
-from django.db.models import Q
+from django.db.models import Q, Case, When, Value, IntegerField, Sum
 from .serializers import UserSearchSerializer
 from django.contrib.auth import get_user_model
 
+# Import ExpenseSplit to calculate cross-group balances
+from expenses.models import ExpenseSplit
 
 User = get_user_model()
 
@@ -18,9 +20,33 @@ class UserSearchView(generics.ListAPIView):
 
     def get_queryset(self):
         query = self.request.query_params.get('q', '')
+        
         # Filter users by username, excluding the current logged-in user
         if query:
-            return User.objects.filter(username__icontains=query).exclude(id=self.request.user.id)
+            return User.objects.filter(
+                username__icontains=query
+            ).exclude(
+                id=self.request.user.id
+            ).annotate(
+                match_rank=Case(
+                    # Exact case-sensitive match
+                    When(username=query, then=Value(1)),
+                    
+                    # Case-sensitive prefix match
+                    When(username__startswith=query, then=Value(2)),
+                    
+                    # Exact case-insensitive match
+                    When(username__iexact=query, then=Value(3)),
+                    
+                    # Case-insensitive prefix match
+                    When(username__istartswith=query, then=Value(4)),
+                    
+                    # Everything else (partial matches inside the string)
+                    default=Value(5),
+                    output_field=IntegerField()
+                )
+            ).order_by('match_rank', 'username')
+            
         return User.objects.none()
 
 class RegisterAPIView(generics.GenericAPIView):
@@ -105,20 +131,67 @@ class FriendsListView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
+        user = request.user
         # Get users who are in an 'accepted' friendship with the requester
         friendships = Friendship.objects.filter(
-            Q(sender=request.user) | Q(receiver=request.user), 
+            Q(sender=user) | Q(receiver=user), 
             status='accepted'
         )
         friends = []
         for f in friendships:
-            friend = f.receiver if f.sender == request.user else f.sender
-            friends.append({'id': f.id, 'username': friend.username})
+            friend = f.receiver if f.sender == user else f.sender
+            
+            # 1. Total YOU are owed by this friend (Splits where you paid, they owe, is_paid=False)
+            owed_to_me = ExpenseSplit.objects.filter(
+                expense__payer=user,
+                user=friend,
+                is_paid=False
+            ).aggregate(total=Sum('amount_owed'))['total'] or 0.0
+
+            # 2. Total YOU owe this friend (Splits where they paid, you owe, is_paid=False)
+            owed_by_me = ExpenseSplit.objects.filter(
+                expense__payer=friend,
+                user=user,
+                is_paid=False
+            ).aggregate(total=Sum('amount_owed'))['total'] or 0.0
+
+            balance = float(owed_to_me) - float(owed_by_me)
+
+            friends.append({
+                'id': friend.id, 
+                'username': friend.username,
+                'balance': balance
+            })
+            
         return Response(friends)
 
-class RemoveFriendView(generics.DestroyAPIView):
+class RemoveFriendView(APIView):
     permission_classes = [permissions.IsAuthenticated]
-    queryset = Friendship.objects.all()
 
-    def get_queryset(self):
-        return Friendship.objects.filter(Q(sender=self.request.user) | Q(receiver=self.request.user))
+    def delete(self, request, pk):
+        # 1. Guard: Check for any unpaid expenses between the two users
+        has_unpaid_expenses = ExpenseSplit.objects.filter(
+            Q(expense__payer=request.user, user_id=pk, is_paid=False) |
+            Q(expense__payer_id=pk, user=request.user, is_paid=False)
+        ).exists()
+
+        if has_unpaid_expenses:
+            return Response(
+                {"error": "Settle your expenses first"}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # 2. Proceed with deletion if no unpaid expenses exist
+        try:
+            # Find the friendship involving both the logged-in user and the friend
+            friendship = Friendship.objects.get(
+                (Q(sender=request.user) & Q(receiver_id=pk)) | 
+                (Q(sender_id=pk) & Q(receiver=request.user))
+            )
+            friendship.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except Friendship.DoesNotExist:
+            return Response(
+                {"error": "Friendship not found."}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
