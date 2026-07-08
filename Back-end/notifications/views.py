@@ -45,37 +45,37 @@ class SendPaymentReminderView(APIView):
 
     def post(self, request):
         recipient_id = request.data.get('recipient_id')
-        group_id = request.data.get('group_id')
+        expense_id = request.data.get('expense_id')
 
-        if not recipient_id or not group_id:
+        if not recipient_id or not expense_id:
             return Response(
-                {'error': 'Both recipient_id and group_id are required fields.'}, 
+                {'error': 'Both recipient_id and expense_id are required fields.'}, 
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        group = get_object_or_404(Group, pk=group_id)
+        from expenses.models import ExpenseSplit
         recipient = get_object_or_404(User, pk=recipient_id)
 
-        # Security Check: Ensure the sender is an active member of this group
-        if not GroupMember.objects.filter(group=group, user=request.user, status='accepted').exists():
+        # Security Check: Ensure the sender is the payer and the recipient actually owes them for this specific expense
+        split = ExpenseSplit.objects.filter(
+            expense_id=expense_id,
+            expense__payer=request.user,
+            user=recipient,
+            is_paid=False
+        ).first()
+
+        if not split:
             return Response(
-                {'error': 'You are not an active member of this group.'}, 
-                status=status.HTTP_403_FORBIDDEN
+                {'error': 'Active unpaid expense split not found for this user.'}, 
+                status=status.HTTP_404_NOT_FOUND
             )
 
-        # Check: Ensure the recipient is an active member of this group
-        if not GroupMember.objects.filter(group=group, user=recipient, status='accepted').exists():
-            return Response(
-                {'error': 'The designated recipient is not a member of this group.'}, 
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        # Create the payment reminder notification
+        # Create the payment reminder notification using the actual amount owed
         Notification.objects.create(
             recipient=recipient,
             type='payment_reminder',
-            message=f"{request.user.username} is reminding you to pay the fuck up in group '{group.name}'!",
-            related_id=group.id
+            message=f"{request.user.username} is reminding you to pay the fuck up Ŧ{split.amount_owed:.2f} for '{split.expense.description}'!",
+            related_id=expense_id
         )
 
         return Response({'status': 'Payment reminder sent successfully.'}, status=status.HTTP_201_CREATED)

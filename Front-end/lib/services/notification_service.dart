@@ -34,12 +34,15 @@ class NotificationService {
   /// Sends a "Pay Up!" payment reminder to a specific group member
   static Future<void> sendPaymentReminder({
     required int recipientId,
-    required int groupId,
+    required int expenseId,
   }) async {
     final token = await AuthService.getToken();
     await _dio.post(
       '/notifications/remind/',
-      data: {'recipient_id': recipientId, 'group_id': groupId},
+      data: {
+        'recipient_id': recipientId,
+        'expense_id': expenseId,
+      },
       options: Options(headers: {'Authorization': 'Token $token'}),
     );
   }

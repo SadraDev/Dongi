@@ -272,13 +272,29 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildBodyContent() {
-    // 1. Calculate Group Totals
+    // Calculate Group Totals
     double groupOwed = 0;
     double groupOwe = 0;
     for (final group in _groups) {
       groupOwed += group.totalOwed;
       groupOwe += group.totalOwe;
     }
+
+    // Calculate Direct (Friend) Totals
+    double directOwed = 0;
+    double directOwe = 0;
+    for (final friend in _friends) {
+      // Use direct_balance to isolate non-group debts and prevent double counting
+      final double bal = (friend['direct_balance'] ?? 0).toDouble();
+      if (bal > 0) {
+        directOwed += bal;
+      } else if (bal < 0) {
+        directOwe += bal.abs();
+      }
+    }
+
+    final double totalOwed = groupOwed + directOwed;
+    final double totalOwe = groupOwe + directOwe;
 
     // Combine sections for the SliverList
     final List<Widget> listItems = [];
@@ -289,19 +305,32 @@ class _HomeScreenState extends State<HomeScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           CumulativeBalanceCard(
-            totalOwed: groupOwed,
-            totalOwe: groupOwe,
+            totalOwed: totalOwed,
+            totalOwe: totalOwe,
           ),
           if (_friends.isNotEmpty && showFriendsNotifier.value)
             Padding(
               padding: const EdgeInsets.only(left: 4, top: 24, bottom: 12),
-              child: Text(
-                'Your Friends',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Your Friends',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  Text(
+                    _getFormattedDate(),
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
               ),
             ),
         ],
@@ -399,7 +428,6 @@ class _HomeScreenState extends State<HomeScreen> {
         borderRadius: BorderRadius.circular(24),
         onTap: () {
           HapticFeedback.lightImpact();
-          // HALLUCINATED
           Navigator.push(
             context,
             PageRouteBuilder(
@@ -415,7 +443,6 @@ class _HomeScreenState extends State<HomeScreen> {
               transitionDuration: const Duration(milliseconds: 300),
             ),
           ).then((_) => _refreshData());
-          // HALLUCINATED
         },
         child: Padding(
           padding: const EdgeInsets.all(20),

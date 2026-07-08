@@ -12,7 +12,6 @@ class SettingsService {
   static const _showGroupsKey = 'show_groups';
 
   // Cross-platform storage helpers
-
   static Future<void> _write(String key, String value) async {
     // await _secureStorage.write(key: key, value: value);
     if (kIsWeb) {
@@ -53,19 +52,15 @@ class SettingsService {
   }
 
   // Friends
-
   static Future<void> saveShowFriends(bool value) async {
     await _write(_showFriendsKey, value.toString());
   }
 
   static Future<bool> loadShowFriends() async {
-    return (await _read(_showFriendsKey)) == 'false'
-        ? false
-        : true;
+    return (await _read(_showFriendsKey)) == 'true';
   }
 
   // Groups
-
   static Future<void> saveShowGroups(bool value) async {
     await _write(_showGroupsKey, value.toString());
   }

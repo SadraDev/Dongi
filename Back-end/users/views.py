@@ -141,14 +141,14 @@ class FriendsListView(APIView):
         for f in friendships:
             friend = f.receiver if f.sender == user else f.sender
             
-            # 1. Total YOU are owed by this friend (Splits where you paid, they owe, is_paid=False)
+            # 1. Total YOU are owed by this friend (Overall)
             owed_to_me = ExpenseSplit.objects.filter(
                 expense__payer=user,
                 user=friend,
                 is_paid=False
             ).aggregate(total=Sum('amount_owed'))['total'] or 0.0
 
-            # 2. Total YOU owe this friend (Splits where they paid, you owe, is_paid=False)
+            # 2. Total YOU owe this friend (Overall)
             owed_by_me = ExpenseSplit.objects.filter(
                 expense__payer=friend,
                 user=user,
@@ -157,10 +157,29 @@ class FriendsListView(APIView):
 
             balance = float(owed_to_me) - float(owed_by_me)
 
+            # 3. Total Direct YOU are owed by this friend (No group)
+            direct_owed_to_me = ExpenseSplit.objects.filter(
+                expense__payer=user,
+                user=friend,
+                is_paid=False,
+                expense__group__isnull=True
+            ).aggregate(total=Sum('amount_owed'))['total'] or 0.0
+
+            # 4. Total Direct YOU owe this friend (No group)
+            direct_owed_by_me = ExpenseSplit.objects.filter(
+                expense__payer=friend,
+                user=user,
+                is_paid=False,
+                expense__group__isnull=True
+            ).aggregate(total=Sum('amount_owed'))['total'] or 0.0
+
+            direct_balance = float(direct_owed_to_me) - float(direct_owed_by_me)
+
             friends.append({
                 'id': friend.id, 
                 'username': friend.username,
-                'balance': balance
+                'balance': balance,
+                'direct_balance': direct_balance
             })
             
         return Response(friends)

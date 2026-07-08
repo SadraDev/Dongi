@@ -146,7 +146,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     } catch (e) {
       if (mounted) {
         setState(() => _processingIds.remove(id));
-        _showErrorSnackBar('Error: $e');
+        final errorMsg = e.toString().replaceFirst('Exception: ', '');
+        if (errorMsg == 'group is deleted') {
+          _showErrorSnackBar('This group has been deleted by the owner.');
+        } else {
+          _showErrorSnackBar(errorMsg);
+        }
         _refreshNotifications();
       }
     }
@@ -177,7 +182,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     } catch (e) {
       if (mounted) {
         setState(() => _processingIds.remove(id));
-        _showErrorSnackBar('Error: $e');
+        final errorMsg = e.toString().replaceFirst('Exception: ', '');
+        if (errorMsg == 'group is deleted') {
+          _showErrorSnackBar('This group has been deleted by the owner.');
+        } else {
+          _showErrorSnackBar(errorMsg);
+        }
         _refreshNotifications();
       }
     }

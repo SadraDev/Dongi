@@ -556,10 +556,9 @@ class _FriendDetailScreenState extends State<FriendDetailScreen> {
               }
 
               try {
-                // If it's a direct expense, the backend should handle groupId=null or we can pass a dummy
                 await NotificationService.sendPaymentReminder(
                   recipientId: recipientId,
-                  groupId: 0,
+                  expenseId: expense['id'],
                 );
 
                 if (mounted) {

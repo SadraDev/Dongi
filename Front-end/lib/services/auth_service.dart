@@ -22,6 +22,7 @@ class AuthService {
   // --- Cross-Platform Storage Helpers ---
 
   static Future<void> _writeStorage(String key, String value) async {
+    // await _secureStorage.write(key: key, value: value);
     if (kIsWeb) {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(key, value);
@@ -31,6 +32,7 @@ class AuthService {
   }
 
   static Future<String?> _readStorage(String key) async {
+    // return await _secureStorage.read(key: key);
     if (kIsWeb) {
       final prefs = await SharedPreferences.getInstance();
       return prefs.getString(key);
@@ -40,6 +42,7 @@ class AuthService {
   }
 
   static Future<void> _deleteStorage(String key) async {
+    // await _secureStorage.delete(key: key);
     if (kIsWeb) {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(key);

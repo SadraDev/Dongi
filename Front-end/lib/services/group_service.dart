@@ -36,26 +36,56 @@ class GroupService {
 
   static Future<void> acceptGroupInvite(int groupId) async {
     final token = await AuthService.getToken();
-    await _dio.post(
-      '/expenses/groups/$groupId/accept/',
-      options: Options(headers: {'Authorization': 'Token $token'}),
-    );
+    try {
+      await _dio.post(
+        '/expenses/groups/$groupId/accept/',
+        options: Options(headers: {'Authorization': 'Token $token'}),
+      );
+    } on DioException catch (e) {
+      if (e.response != null && e.response!.data is Map) {
+        final data = e.response!.data;
+        if (data['error'] != null) {
+          throw Exception(data['error']);
+        }
+      }
+      throw Exception('Failed to accept group invite.');
+    }
   }
 
   static Future<void> rejectGroupInvite(int groupId) async {
     final token = await AuthService.getToken();
-    await _dio.delete(
-      '/expenses/groups/$groupId/reject/',
-      options: Options(headers: {'Authorization': 'Token $token'}),
-    );
+    try {
+      await _dio.delete(
+        '/expenses/groups/$groupId/reject/',
+        options: Options(headers: {'Authorization': 'Token $token'}),
+      );
+    } on DioException catch (e) {
+      if (e.response != null && e.response!.data is Map) {
+        final data = e.response!.data;
+        if (data['error'] != null) {
+          throw Exception(data['error']);
+        }
+      }
+      throw Exception('Failed to reject group invite.');
+    }
   }
 
   static Future<void> deleteGroup(int groupId) async {
     final token = await AuthService.getToken();
-    await _dio.delete(
-      '/expenses/groups/$groupId/delete/',
-      options: Options(headers: {'Authorization': 'Token $token'}),
-    );
+    try {
+      await _dio.delete(
+        '/expenses/groups/$groupId/delete/',
+        options: Options(headers: {'Authorization': 'Token $token'}),
+      );
+    } on DioException catch (e) {
+      if (e.response != null && e.response!.data is Map) {
+        final data = e.response!.data;
+        if (data['error'] != null) {
+          throw Exception(data['error']);
+        }
+      }
+      throw Exception('Failed to delete group.');
+    }
   }
 
   static Future<Map<String, dynamic>> getGroupDetails(int groupId) async {

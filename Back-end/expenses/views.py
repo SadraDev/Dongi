@@ -31,23 +31,40 @@ class GroupCreateView(generics.CreateAPIView):
     def perform_create(self, serializer):
         serializer.save()
 
-class AcceptGroupInviteView(generics.UpdateAPIView):
+class AcceptGroupInviteView(APIView):
     permission_classes = [permissions.IsAuthenticated]
     
     def post(self, request, pk):
-        membership = GroupMember.objects.get(group_id=pk, user=request.user)
-        membership.status = 'accepted'
-        membership.save()
-        return Response({'status': 'Accepted'})
+        try:
+            membership = GroupMember.objects.get(group_id=pk, user=request.user)
+            membership.status = 'accepted'
+            membership.save()
+            return Response({'status': 'Accepted'})
+        except GroupMember.DoesNotExist:
+            # Clean up the stuck notification
+            from notifications.models import Notification
+            Notification.objects.filter(
+                recipient=request.user, 
+                related_id=pk
+            ).update(is_read=True)
+            
+            return Response({"error": "group is deleted"}, status=status.HTTP_400_BAD_REQUEST)
 
 class RejectGroupInviteView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated]
 
     def delete(self, request, pk):
         try:
             membership = GroupMember.objects.get(group_id=pk, user=request.user)
         except GroupMember.DoesNotExist:
-            return Response({"error": "Group invitation not found."}, status=status.HTTP_404_NOT_FOUND)
+            # Clean up the stuck notification so it leaves the UI
+            from notifications.models import Notification
+            Notification.objects.filter(
+                recipient=request.user, 
+                related_id=pk
+            ).update(is_read=True)
+            
+            return Response({"error": "group is deleted"}, status=status.HTTP_400_BAD_REQUEST)
 
         if membership.status != 'pending':
             return Response({"error": "This invitation has already been handled."}, status=status.HTTP_400_BAD_REQUEST)
@@ -55,10 +72,37 @@ class RejectGroupInviteView(APIView):
         membership.delete()
         return Response({"status": "rejected"}, status=status.HTTP_200_OK)
 
-class GroupDeleteView(generics.DestroyAPIView):
-    queryset = Group.objects.all()
-    serializer_class = GroupSerializer
-    permission_classes = [permissions.IsAuthenticated, IsGroupCreator]
+class GroupDeleteView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def delete(self, request, pk):
+        from django.shortcuts import get_object_or_404
+        from expenses.models import Group, ExpenseSplit
+        
+        group = get_object_or_404(Group, pk=pk)
+
+        # 1. Guard: Ensure only the creator can delete the group
+        if group.created_by != request.user:
+            return Response(
+                {"error": "Only the group creator can delete this group."}, 
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        # 2. Guard: Check for any unpaid expenses within this specific group
+        has_unpaid_expenses = ExpenseSplit.objects.filter(
+            expense__group=group, 
+            is_paid=False
+        ).exists()
+
+        if has_unpaid_expenses:
+            return Response(
+                {"error": "All expenses in the group must be settled before deleting."}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # 3. Proceed with deletion
+        group.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 class GroupDetailView(APIView):
     permission_classes = [IsAuthenticated]
@@ -195,21 +239,6 @@ class ExpenseCreateView(APIView):
                 )
 
         return Response({"status": "Expense created successfully"}, status=201)
-
-class ToggleExpenseSplitView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def post(self, request, pk):
-        split = get_object_or_404(ExpenseSplit, pk=pk)
-        if split.expense.payer != request.user:
-            return Response({"error": "Only the expense payer can modify split logs."}, status=403)
-
-        is_paid = request.data.get('is_paid')
-        if is_paid is not None:
-            split.is_paid = is_paid
-            split.save()
-            return Response({"status": "Updated", "is_paid": split.is_paid})
-        return Response({"error": "Missing 'is_paid' field."}, status=400)
 
 class InviteGroupMemberView(APIView):
     permission_classes = [IsAuthenticated]

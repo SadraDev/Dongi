@@ -129,7 +129,13 @@ class _GroupScreenState extends State<GroupScreen> {
           Navigator.pop(context);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Error: $e'),
+              content: Row(
+                children: [
+                  const Icon(Icons.error_outline_rounded, color: Colors.white),
+                  const SizedBox(width: 12),
+                  Expanded(child: Text(e.toString().replaceFirst('Exception: ', ''))),
+                ],
+              ),
               backgroundColor: Theme.of(context).colorScheme.error,
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -986,7 +992,7 @@ class _GroupScreenState extends State<GroupScreen> {
               try {
                 await NotificationService.sendPaymentReminder(
                   recipientId: recipientId,
-                  groupId: widget.groupId,
+                  expenseId: expense['id'],
                 );
 
                 if (mounted) {
