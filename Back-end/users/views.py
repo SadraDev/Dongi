@@ -1,5 +1,5 @@
 from .models import Friendship
-from .serializers import FriendRequestSerializer
+from .serializers import FriendRequestSerializer, UserAvatarSerializer
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
@@ -13,6 +13,19 @@ from django.contrib.auth import get_user_model
 from expenses.models import ExpenseSplit
 
 User = get_user_model()
+
+class UserAvatarView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        return Response({"avatar_index": request.user.avatar_index})
+
+    def patch(self, request):
+        serializer = UserAvatarSerializer(request.user, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class UserSearchView(generics.ListAPIView):
     serializer_class = UserSearchSerializer
@@ -178,6 +191,8 @@ class FriendsListView(APIView):
             friends.append({
                 'id': friend.id, 
                 'username': friend.username,
+                'avatar_index': friend.avatar_index,
+                'is_superuser': friend.is_superuser,
                 'balance': balance,
                 'direct_balance': direct_balance
             })

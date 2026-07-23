@@ -141,6 +141,8 @@ class GroupDetailView(APIView):
             members_data.append({
                 "id": member.user.id,
                 "name": member.user.username,
+                "avatar_index": member.user.avatar_index,
+                "is_superuser": member.user.is_superuser,
                 "balance": balance,
                 "status": member.status
             })
@@ -160,8 +162,10 @@ class GroupDetailView(APIView):
                     
                 splits_data.append({
                     "id": split.id,
-                    "user": split.user.id, # Included for your backend reminder calls
+                    "user": split.user.id,
                     "name": "You" if split.user == user else split.user.username,
+                    "avatar_index": split.user.avatar_index,
+                    "is_superuser": split.user.is_superuser,
                     "amount": float(split.amount_owed),
                     "isPaid": split.is_paid
                 })
@@ -172,6 +176,7 @@ class GroupDetailView(APIView):
                 "amount": float(exp.total_amount),
                 "paidByMe": paid_by_me,
                 "payerName": "You" if paid_by_me else exp.payer.username,
+                "created_at": exp.created_at.isoformat() if exp.created_at else None,
                 "splits": splits_data
             })
 
@@ -345,6 +350,8 @@ class FriendDetailView(APIView):
                     "id": split.id,
                     "user": split.user.id,
                     "name": "You" if split.user == user else split.user.username,
+                    "avatar_index": split.user.avatar_index,
+                    "is_superuser": split.user.is_superuser,
                     "amount": float(split.amount_owed),
                     "isPaid": split.is_paid
                 })
@@ -357,6 +364,7 @@ class FriendDetailView(APIView):
                     "paidByMe": paid_by_me,
                     "payerName": "You" if paid_by_me else exp.payer.username,
                     "groupName": exp.group.name if exp.group else "Direct Expense",
+                    "created_at": exp.created_at.isoformat() if exp.created_at else None,
                     "splits": splits_data
                 })
 
@@ -364,6 +372,8 @@ class FriendDetailView(APIView):
             "friend": {
                 "id": friend.id,
                 "name": friend.username,
+                "avatar_index": friend.avatar_index,
+                "is_superuser": friend.is_superuser,
                 "balance": balance
             },
             "expenses": expenses_data

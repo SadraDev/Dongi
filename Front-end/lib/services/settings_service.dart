@@ -4,8 +4,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingsService {
-  static const FlutterSecureStorage _secureStorage =
-  FlutterSecureStorage();
+  static const FlutterSecureStorage _secureStorage = FlutterSecureStorage();
 
   static const _themeModeKey = 'theme_mode';
   static const _showFriendsKey = 'show_friends';
@@ -66,9 +65,7 @@ class SettingsService {
   }
 
   static Future<bool> loadShowGroups() async {
-    return (await _read(_showGroupsKey)) == 'false'
-        ? false
-        : true;
+    return (await _read(_showGroupsKey)) == 'false' ? false : true;
   }
 
   static Future<void> loadSettings({

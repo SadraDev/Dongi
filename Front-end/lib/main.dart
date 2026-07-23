@@ -6,7 +6,6 @@ import 'services/auth_service.dart';
 import 'services/settings_service.dart';
 import './app_state.dart';
 
-
 void main() async {
   // Ensure Flutter is initialized before calling async code
   WidgetsFlutterBinding.ensureInitialized();
@@ -20,6 +19,11 @@ void main() async {
 
   // Check if a token exists in secure storage
   final bool isLoggedIn = await AuthService.isLoggedIn();
+
+  if (isLoggedIn) {
+    avatarNotifier.value = await AuthService.getAvatarIndex();
+    isSuperuserNotifier.value = await AuthService.getIsSuperuser();
+  }
 
   runApp(DongiCloneApp(isLoggedIn: isLoggedIn));
 }

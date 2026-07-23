@@ -1,5 +1,9 @@
+import 'dart:async';
+import 'dart:math' as math;
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../services/friend_service.dart';
 import '../../services/group_service.dart';
 import '../../services/notification_service.dart';
@@ -11,17 +15,85 @@ class NotificationsScreen extends StatefulWidget {
   State<NotificationsScreen> createState() => _NotificationsScreenState();
 }
 
-class _NotificationsScreenState extends State<NotificationsScreen> {
+class _NotificationsScreenState extends State<NotificationsScreen>
+    with TickerProviderStateMixin {
   bool _isLoading = true;
   String? _errorMessage;
   List<dynamic> _notifications = [];
 
   final Set<int> _processingIds = {};
 
+  late AnimationController _floatingController;
+
   @override
   void initState() {
     super.initState();
+    _floatingController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 6),
+    )..repeat();
     _fetchNotifications();
+  }
+
+  @override
+  void dispose() {
+    _floatingController.dispose();
+    super.dispose();
+  }
+
+  // --- DESIGN TOKENS (shared visual language) ---
+  ({
+  bool isDark,
+  Color p1,
+  Color p2,
+  Color success,
+  Color warning,
+  Color danger,
+  Color bg,
+  Color bg2,
+  Color card,
+  Color subtle,
+  Color text,
+  Color subText,
+  Color border,
+  })
+  get _tokens {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    const p1 = Color(0xFF00E5FF);
+    const p2 = Color(0xFF7C3AED);
+    const success = Color(0xFF00E676);
+    const warning = Color(0xFFFFAB00);
+    const danger = Color(0xFFFF3B5C);
+
+    // Auth/Home Screen derived colors
+    final bg = isDark ? const Color(0xFF050816) : const Color(0xFFF1F5F9);
+    final bg2 = isDark ? const Color(0xFF0A0F1E) : const Color(0xFFDBEAFE);
+
+    final card = isDark
+        ? const Color(0xFF0D1321).withValues(alpha: 0.85)
+        : Colors.white.withValues(alpha: 0.95);
+    final subtle = isDark
+        ? const Color(0xFF151C2C).withValues(alpha: 0.8)
+        : const Color(0xFFE2E8F0).withValues(alpha: 0.6);
+    final text = isDark ? const Color(0xFFE2E8F0) : const Color(0xFF020617);
+    final subText = isDark ? const Color(0xFF64748B) : const Color(0xFF475569);
+    final border = isDark ? const Color(0xFF1E293B) : const Color(0xFFCBD5E1);
+
+    return (
+    isDark: isDark,
+    p1: p1,
+    p2: p2,
+    success: success,
+    warning: warning,
+    danger: danger,
+    bg: bg,
+    bg2: bg2,
+    card: card,
+    subtle: subtle,
+    text: text,
+    subText: subText,
+    border: border,
+    );
   }
 
   Future<void> _fetchNotifications() async {
@@ -49,7 +121,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 
   Future<void> _refreshNotifications() async {
-    // Hidden refresh without triggering the full loading state
     try {
       final items = await NotificationService.fetchNotifications();
       if (mounted) {
@@ -63,6 +134,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 
   void _showSuccessSnackBar(String message) {
+    final t = _tokens;
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -70,18 +142,24 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           children: [
             const Icon(Icons.check_circle_rounded, color: Colors.white),
             const SizedBox(width: 12),
-            Expanded(child: Text(message)),
+            Expanded(
+              child: Text(
+                message,
+                style: GoogleFonts.outfit(color: Colors.white),
+              ),
+            ),
           ],
         ),
-        backgroundColor: Colors.green.shade600,
+        backgroundColor: t.success,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       ),
     );
   }
 
   void _showErrorSnackBar(String message) {
+    final t = _tokens;
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -89,12 +167,17 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           children: [
             const Icon(Icons.error_outline_rounded, color: Colors.white),
             const SizedBox(width: 12),
-            Expanded(child: Text(message)),
+            Expanded(
+              child: Text(
+                message,
+                style: GoogleFonts.outfit(color: Colors.white),
+              ),
+            ),
           ],
         ),
-        backgroundColor: Theme.of(context).colorScheme.error,
+        backgroundColor: t.danger,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       ),
     );
@@ -111,10 +194,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       if (diff.inHours < 24) return '${diff.inHours}h ago';
       if (diff.inDays < 7) return '${diff.inDays}d ago';
 
-      const months = [
-        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-      ];
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
       return "${months[date.month - 1]} ${date.day}";
     } catch (e) {
       return dateString.split('T')[0];
@@ -124,9 +204,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   Future<void> _handleAccept(dynamic item) async {
     final int id = item['id'];
     final String type = item['type'];
-
     setState(() => _processingIds.add(id));
-
     try {
       if (type == 'friend_request') {
         await FriendService.acceptFriendRequest(item['related_id']);
@@ -136,22 +214,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       await NotificationService.markAsRead(id);
       if (mounted) {
         setState(() => _processingIds.remove(id));
-        _showSuccessSnackBar(
-          type == 'friend_request'
-              ? 'Friend request accepted!'
-              : 'Joined group successfully!',
-        );
+        _showSuccessSnackBar(type == 'friend_request' ? 'Friend request accepted!' : 'Joined group successfully!');
         _refreshNotifications();
       }
     } catch (e) {
       if (mounted) {
         setState(() => _processingIds.remove(id));
-        final errorMsg = e.toString().replaceFirst('Exception: ', '');
-        if (errorMsg == 'group is deleted') {
-          _showErrorSnackBar('This group has been deleted by the owner.');
-        } else {
-          _showErrorSnackBar(errorMsg);
-        }
+        _showErrorSnackBar(e.toString().replaceFirst('Exception: ', ''));
         _refreshNotifications();
       }
     }
@@ -160,9 +229,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   Future<void> _handleReject(dynamic item) async {
     final int id = item['id'];
     final String type = item['type'];
-
     setState(() => _processingIds.add(id));
-
     try {
       if (type == 'friend_request') {
         await FriendService.rejectFriendRequest(item['related_id']);
@@ -172,22 +239,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       await NotificationService.markAsRead(id);
       if (mounted) {
         setState(() => _processingIds.remove(id));
-        _showSuccessSnackBar(
-          type == 'friend_request'
-              ? 'Friend request rejected.'
-              : 'Group invite declined.',
-        );
+        _showSuccessSnackBar(type == 'friend_request' ? 'Friend request rejected.' : 'Group invite declined.');
         _refreshNotifications();
       }
     } catch (e) {
       if (mounted) {
         setState(() => _processingIds.remove(id));
-        final errorMsg = e.toString().replaceFirst('Exception: ', '');
-        if (errorMsg == 'group is deleted') {
-          _showErrorSnackBar('This group has been deleted by the owner.');
-        } else {
-          _showErrorSnackBar(errorMsg);
-        }
+        _showErrorSnackBar(e.toString().replaceFirst('Exception: ', ''));
         _refreshNotifications();
       }
     }
@@ -212,53 +270,102 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final t = _tokens;
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _errorMessage != null
-          ? _buildErrorState()
-          : RefreshIndicator(
-        color: Theme.of(context).primaryColor,
-        onRefresh: _refreshNotifications,
-        child: CustomScrollView(
-          physics: const AlwaysScrollableScrollPhysics(
-            parent: BouncingScrollPhysics(),
+      backgroundColor: t.bg,
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [t.bg, t.bg2, t.bg],
+                ),
+              ),
+            ),
           ),
-          slivers: [
-            _buildSliverAppBar(),
-            _buildBodyContent(),
-          ],
-        ),
+          Positioned(
+            top: -120,
+            right: -80,
+            child: Container(
+              width: 320,
+              height: 320,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [t.p1.withValues(alpha: t.isDark ? 0.15 : 0.20), t.p1.withValues(alpha: 0)],
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: -120,
+            left: -100,
+            child: Container(
+              width: 380,
+              height: 380,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [t.p2.withValues(alpha: t.isDark ? 0.12 : 0.15), t.p2.withValues(alpha: 0)],
+                ),
+              ),
+            ),
+          ),
+          ClipRect(
+            child: Stack(
+              children: _buildSmoothFloatingCurrencies(t.p1, t.p2, t.isDark),
+            ),
+          ),
+          _isLoading
+              ? Center(child: CircularProgressIndicator(color: t.p1, strokeWidth: 3))
+              : _errorMessage != null
+              ? _buildErrorState()
+              : RefreshIndicator(
+            color: t.p1,
+            backgroundColor: t.card,
+            onRefresh: _refreshNotifications,
+            child: CustomScrollView(
+              physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+              slivers: [_buildSliverAppBar(), _buildBodyContent()],
+            ),
+          ),
+        ],
       ),
     );
   }
 
   SliverAppBar _buildSliverAppBar() {
+    final t = _tokens;
     return SliverAppBar.large(
       pinned: true,
-      stretch: true,
-      expandedHeight: 140,
-      backgroundColor: Theme.of(context).colorScheme.surface,
+      backgroundColor: Colors.transparent,
+      surfaceTintColor: Colors.transparent,
+      elevation: 0,
       flexibleSpace: FlexibleSpaceBar(
         titlePadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-        title: Text(
-          'Notifications',
-          style: TextStyle(
-            fontWeight: FontWeight.w800,
-            color: Theme.of(context).colorScheme.onSurface,
-            letterSpacing: -0.5,
-          ),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: LinearGradient(colors: [t.p1, t.p2]),
+              ),
+              child: const Icon(Icons.notifications_rounded, size: 16, color: Colors.white),
+            ),
+            const SizedBox(width: 10),
+            Text('Notifications', style: GoogleFonts.sora(fontWeight: FontWeight.w800, color: t.text, fontSize: 20, letterSpacing: -0.5)),
+          ],
         ),
         background: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [
-                Theme.of(context).primaryColor.withValues(alpha: 0.1),
-                Theme.of(context).colorScheme.surface,
-              ],
+              colors: [t.p1.withValues(alpha: t.isDark ? 0.14 : 0.10), Colors.transparent],
             ),
           ),
         ),
@@ -268,19 +375,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   Widget _buildBodyContent() {
     if (_notifications.isEmpty) {
-      return SliverFillRemaining(
-        hasScrollBody: false,
-        child: _buildEmptyState(),
-      );
+      return SliverFillRemaining(hasScrollBody: false, child: _buildEmptyState());
     }
-
     return SliverPadding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 40),
       sliver: SliverList(
         delegate: SliverChildBuilderDelegate(
-              (context, index) {
-            return _buildNotificationCard(_notifications[index]);
-          },
+              (context, index) => _buildNotificationCard(_notifications[index]),
           childCount: _notifications.length,
         ),
       ),
@@ -288,275 +389,94 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 
   Widget _buildEmptyState() {
+    final t = _tokens;
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.notifications_none_rounded,
-              size: 56,
-              color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
-            ),
-          ),
-          const SizedBox(height: 24),
-          Text(
-            'All caught up!',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-              color: Theme.of(context).colorScheme.onSurface,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'You have no new notifications right now.',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 16,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-          ),
+          Icon(Icons.notifications_none_rounded, size: 64, color: t.subText.withValues(alpha: 0.5)),
+          const SizedBox(height: 16),
+          Text('All caught up!', style: GoogleFonts.sora(fontSize: 20, fontWeight: FontWeight.w700, color: t.text)),
         ],
       ),
     );
   }
 
   Widget _buildErrorState() {
+    final t = _tokens;
     return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.error_outline_rounded, size: 64, color: t.danger),
+          const SizedBox(height: 16),
+          Text('Failed to load', style: GoogleFonts.sora(fontSize: 20, fontWeight: FontWeight.w700, color: t.text)),
+          const SizedBox(height: 32),
+          FilledButton(onPressed: _fetchNotifications, child: const Text('Try Again')),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNotificationCard(dynamic item) {
+    final t = _tokens;
+    final int id = item['id'];
+    final bool isProcessing = _processingIds.contains(id);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: t.card,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: t.border),
+        ),
+        child: Row(
           children: [
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.errorContainer,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.error_outline_rounded,
-                size: 48,
-                color: Theme.of(context).colorScheme.onErrorContainer,
-              ),
+            Expanded(
+              child: Text(item['message'] ?? '', style: GoogleFonts.outfit(color: t.text)),
             ),
-            const SizedBox(height: 24),
-            Text(
-              'Failed to load',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
-                color: Theme.of(context).colorScheme.onSurface,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              _errorMessage ?? 'Something went wrong.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 32),
-            FilledButton.icon(
-              onPressed: _fetchNotifications,
-              icon: const Icon(Icons.refresh_rounded),
-              label: const Text('Try Again'),
-              style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-              ),
-            ),
+            if (isProcessing) const SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 2)),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildNotificationCard(dynamic item) {
-    final String type = item['type'] ?? '';
-    final int id = item['id'];
-    final bool isProcessing = _processingIds.contains(id);
-    final Color iconColor = _getIconColor(type);
-    final IconData icon = _getIcon(type);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bool isActionable = type == 'friend_request' || type == 'group_invite';
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: AnimatedOpacity(
-        duration: const Duration(milliseconds: 200),
-        opacity: isProcessing ? 0.5 : 1.0,
-        child: Card(
-          elevation: 0,
-          color: Theme.of(context).colorScheme.surface,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
-            side: BorderSide(
-              color: Theme.of(context).dividerColor.withValues(alpha: 0.4),
+  List<Widget> _buildSmoothFloatingCurrencies(Color color1, Color color2, bool isDark) {
+    final currencies = [
+      {'symbol': '₮', 'x': 0.06, 'y': 0.10, 'size': 52.0, 'c': color1},
+      {'symbol': '﷼', 'x': 0.90, 'y': 0.06, 'size': 60.0, 'c': color2},
+      {'symbol': '💳', 'x': 0.94, 'y': 0.38, 'size': 44.0, 'c': color1},
+      {'symbol': '₮', 'x': 0.03, 'y': 0.55, 'size': 48.0, 'c': color2},
+      {'symbol': '﷼', 'x': 0.87, 'y': 0.72, 'size': 56.0, 'c': color1},
+      {'symbol': '💳', 'x': 0.12, 'y': 0.88, 'size': 40.0, 'c': color2},
+      {'symbol': '₮', 'x': 0.78, 'y': 0.94, 'size': 46.0, 'c': color1},
+      {'symbol': '﷼', 'x': 0.50, 'y': 0.03, 'size': 36.0, 'c': color2},
+      {'symbol': '💳', 'x': 0.42, 'y': 0.96, 'size': 42.0, 'c': color1},
+      {'symbol': '₮', 'x': 0.95, 'y': 0.55, 'size': 34.0, 'c': color2},
+    ];
+    return List.generate(currencies.length, (index) {
+      final c = currencies[index];
+      final phaseOffset = index * 0.6;
+      final floatDistance = 12.0 + (index % 3) * 4.0;
+      return AnimatedBuilder(
+        animation: _floatingController,
+        builder: (context, child) {
+          final t = _floatingController.value;
+          final dx = math.sin((t * 2 * math.pi) + phaseOffset) * floatDistance;
+          final dy = math.cos((t * 2 * math.pi) + phaseOffset * 0.7) * floatDistance;
+          return Positioned(
+            left: (c['x'] as double) * MediaQuery.of(context).size.width + dx,
+            top: (c['y'] as double) * MediaQuery.of(context).size.height + dy,
+            child: Opacity(
+              opacity: isDark ? 0.06 : 0.04,
+              child: Text(c['symbol'] as String, style: TextStyle(fontSize: c['size'] as double, fontWeight: FontWeight.bold, color: c['c'] as Color)),
             ),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Row(
-              children: [
-                // Colored Icon Box
-                Container(
-                  width: 52,
-                  height: 52,
-                  decoration: BoxDecoration(
-                    color: iconColor.withValues(alpha: isDark ? 0.15 : 0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(icon, color: iconColor, size: 24),
-                ),
-                const SizedBox(width: 16),
-
-                // Text Content
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        item['message'] ?? 'New notification',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 15,
-                          height: 1.3,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        _formatDate(item['created_at']?.toString() ?? ''),
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Action Buttons
-                if (isActionable) ...[
-                  const SizedBox(width: 12),
-                  _ActionButton(
-                    icon: Icons.close_rounded,
-                    color: Theme.of(context).colorScheme.error,
-                    bgColor: Theme.of(context).colorScheme.errorContainer.withValues(alpha: 0.5),
-                    isLoading: isProcessing,
-                    onTap: isProcessing ? null : () {
-                      HapticFeedback.lightImpact();
-                      _handleReject(item);
-                    },
-                  ),
-                  const SizedBox(width: 8),
-                  _ActionButton(
-                    icon: Icons.check_rounded,
-                    color: Colors.green.shade700,
-                    bgColor: Colors.green.withValues(alpha: isDark ? 0.2 : 0.15),
-                    isLoading: isProcessing,
-                    onTap: isProcessing ? null : () {
-                      HapticFeedback.lightImpact();
-                      _handleAccept(item);
-                    },
-                  ),
-                ] else ...[
-                  const SizedBox(width: 12),
-                  _ActionButton(
-                    icon: Icons.close_rounded,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    bgColor: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-                    isLoading: isProcessing,
-                    onTap: isProcessing ? null : () {
-                      HapticFeedback.lightImpact();
-                      _handleDismiss(item);
-                    },
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  IconData _getIcon(String type) {
-    switch (type) {
-      case 'friend_request':
-        return Icons.person_add_rounded;
-      case 'group_invite':
-        return Icons.group_add_rounded;
-      case 'payment_reminder':
-        return Icons.notifications_active_rounded;
-      default:
-        return Icons.notifications_rounded;
-    }
-  }
-
-  Color _getIconColor(String type) {
-    switch (type) {
-      case 'friend_request':
-        return Colors.blue.shade600;
-      case 'group_invite':
-        return Colors.green.shade600;
-      case 'payment_reminder':
-        return Colors.orange.shade600;
-      default:
-        return Colors.grey.shade600;
-    }
-  }
-}
-
-class _ActionButton extends StatelessWidget {
-  final IconData icon;
-  final Color color;
-  final Color bgColor;
-  final bool isLoading;
-  final VoidCallback? onTap;
-
-  const _ActionButton({
-    required this.icon,
-    required this.color,
-    required this.bgColor,
-    required this.isLoading,
-    this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(24),
-        onTap: onTap,
-        child: Container(
-          width: 44,
-          height: 44,
-          decoration: BoxDecoration(
-            color: bgColor,
-            shape: BoxShape.circle,
-          ),
-          child: isLoading
-              ? Padding(
-            padding: const EdgeInsets.all(12),
-            child: CircularProgressIndicator(
-              strokeWidth: 2.5,
-              color: color,
-            ),
-          )
-              : Icon(icon, size: 20, color: color),
-        ),
-      ),
-    );
+          );
+        },
+      );
+    });
   }
 }

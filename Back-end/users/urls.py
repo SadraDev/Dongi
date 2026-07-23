@@ -1,11 +1,13 @@
 from django.urls import path
 from .views import (AcceptFriendRequestView, LoginAPIView, FriendsListView, 
                     ReceivedFriendRequestsView, RegisterAPIView, RemoveFriendView, 
-                    SendFriendRequestView, UserSearchView, RejectFriendRequestView)
+                    SendFriendRequestView, UserSearchView, RejectFriendRequestView,
+                    UserAvatarView)
 
 urlpatterns = [
     path('users/register/', RegisterAPIView.as_view(), name='register'),
     path('users/login/', LoginAPIView.as_view(), name='api_token_auth'),
+    path('users/avatar/', UserAvatarView.as_view(), name='user-avatar'),
     path('friends/send/', SendFriendRequestView.as_view(), name='send-friend-request'),
     path('friends/requests/', ReceivedFriendRequestsView.as_view(), name='list-friend-requests'),
     path('friends/accept/<int:pk>/', AcceptFriendRequestView.as_view(), name='accept-friend-request'),

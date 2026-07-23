@@ -10,6 +10,8 @@ class AuthService {
   static const String _tokenKey = 'auth_token';
   static const String _userIdKey = 'user_id';
   static const String _userNameKey = 'user_name';
+  static const String _avatarIndexKey = 'avatar_index';
+  static const String _isSuperuserKey = 'is_superuser';
 
   // Initialize Dio with default options
   static final Dio _dio = Dio(
@@ -65,10 +67,14 @@ class AuthService {
         final token = response.data['token'];
         final userId = response.data['user']['id'];
         final userName = response.data['user']['username'];
+        final avatarIdx = response.data['user']['avatar_index'] ?? 0;
+        final isSuper = response.data['user']['is_superuser'] ?? false;
 
         await _saveToken(token);
         await _saveUserId(userId);
         await _saveUserName(userName);
+        await _writeStorage(_avatarIndexKey, avatarIdx.toString());
+        await _writeStorage(_isSuperuserKey, isSuper.toString());
 
         return null; // Null means success (no error message)
       }
@@ -92,10 +98,14 @@ class AuthService {
         final token = response.data['token'];
         final userId = response.data['user']['id'];
         final userName = response.data['user']['username'];
+        final avatarIdx = response.data['user']['avatar_index'] ?? 0;
+        final isSuper = response.data['user']['is_superuser'] ?? false;
 
         await _saveToken(token);
         await _saveUserId(userId);
         await _saveUserName(userName);
+        await _writeStorage(_avatarIndexKey, avatarIdx.toString());
+        await _writeStorage(_isSuperuserKey, isSuper.toString());
         return null;
       }
       return 'An unexpected error occurred.';
@@ -111,6 +121,8 @@ class AuthService {
     await _deleteStorage(_tokenKey);
     await _deleteStorage(_userIdKey);
     await _deleteStorage(_userNameKey);
+    await _deleteStorage(_avatarIndexKey);
+    await _deleteStorage(_isSuperuserKey);
   }
 
   // Check if logged in
@@ -168,5 +180,28 @@ class AuthService {
     }
 
     return 'Authentication failed. Please try again.';
+  }
+
+  static Future<int> getAvatarIndex() async {
+    final val = await _readStorage(_avatarIndexKey);
+    return int.tryParse(val ?? '0') ?? 0;
+  }
+
+  static Future<void> updateAvatarIndex(int index) async {
+    await _writeStorage(_avatarIndexKey, index.toString());
+    final token = await getToken();
+    if (token == null) return;
+    try {
+      await _dio.patch(
+        '/users/avatar/',
+        data: {'avatar_index': index},
+        options: Options(headers: {'Authorization': 'Token $token'}),
+      );
+    } catch (_) {}
+  }
+
+  static Future<bool> getIsSuperuser() async {
+    final val = await _readStorage(_isSuperuserKey);
+    return val == 'true';
   }
 }
