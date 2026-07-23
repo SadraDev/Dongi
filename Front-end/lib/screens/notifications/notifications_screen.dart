@@ -183,24 +183,6 @@ class _NotificationsScreenState extends State<NotificationsScreen>
     );
   }
 
-  String _formatDate(String dateString) {
-    try {
-      final date = DateTime.parse(dateString);
-      final now = DateTime.now();
-      final diff = now.difference(date);
-
-      if (diff.inMinutes < 1) return 'Just now';
-      if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
-      if (diff.inHours < 24) return '${diff.inHours}h ago';
-      if (diff.inDays < 7) return '${diff.inDays}d ago';
-
-      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-      return "${months[date.month - 1]} ${date.day}";
-    } catch (e) {
-      return dateString.split('T')[0];
-    }
-  }
-
   Future<void> _handleAccept(dynamic item) async {
     final int id = item['id'];
     final String type = item['type'];
@@ -421,7 +403,9 @@ class _NotificationsScreenState extends State<NotificationsScreen>
   Widget _buildNotificationCard(dynamic item) {
     final t = _tokens;
     final int id = item['id'];
+    final String type = item['type'] ?? '';
     final bool isProcessing = _processingIds.contains(id);
+    final bool isActionable = type == 'friend_request' || type == 'group_invite';
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -432,12 +416,63 @@ class _NotificationsScreenState extends State<NotificationsScreen>
           borderRadius: BorderRadius.circular(24),
           border: Border.all(color: t.border),
         ),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(
-              child: Text(item['message'] ?? '', style: GoogleFonts.outfit(color: t.text)),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    item['message'] ?? '',
+                    style: GoogleFonts.outfit(color: t.text, fontSize: 15),
+                  ),
+                ),
+                if (isProcessing) ...[
+                  const SizedBox(width: 12),
+                  const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                ],
+              ],
             ),
-            if (isProcessing) const SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 2)),
+            if (isActionable && !isProcessing) ...[
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => _handleReject(item),
+                    style: TextButton.styleFrom(foregroundColor: t.subText),
+                    child: Text('Reject', style: GoogleFonts.outfit(fontWeight: FontWeight.w600)),
+                  ),
+                  const SizedBox(width: 8),
+                  FilledButton(
+                    onPressed: () => _handleAccept(item),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: t.p1,
+                      foregroundColor: t.bg,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                    ),
+                    child: Text('Accept', style: GoogleFonts.outfit(fontWeight: FontWeight.w700)),
+                  ),
+                ],
+              ),
+            ] else if (!isActionable && !isProcessing) ...[
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => _handleDismiss(item),
+                    style: TextButton.styleFrom(foregroundColor: t.subText),
+                    child: Text('Dismiss', style: GoogleFonts.outfit(fontWeight: FontWeight.w600)),
+                  ),
+                ],
+              ),
+            ],
           ],
         ),
       ),

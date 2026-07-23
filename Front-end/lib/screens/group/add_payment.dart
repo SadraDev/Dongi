@@ -1,3 +1,4 @@
+import 'package:dongi/services/auth_service.dart';
 import 'package:dongi/widgets/user_avatar_display.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -68,11 +69,11 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
     final bg1 = isDark ? const Color(0xFF050816) : const Color(0xFFF1F5F9);
     final bg2 = isDark ? const Color(0xFF0A0F1E) : const Color(0xFFDBEAFE);
     final card = isDark
-        ? const Color(0xFF0D1321).withOpacity(0.85)
-        : Colors.white.withOpacity(0.95);
+        ? const Color(0xFF0D1321).withValues(alpha: 0.85)
+        : Colors.white.withValues(alpha: 0.95);
     final subtle = isDark
-        ? const Color(0xFF151C2C).withOpacity(0.8)
-        : const Color(0xFFE2E8F0).withOpacity(0.6);
+        ? const Color(0xFF151C2C).withValues(alpha: 0.8)
+        : const Color(0xFFE2E8F0).withValues(alpha: 0.6);
     final text = isDark ? const Color(0xFFE2E8F0) : const Color(0xFF020617);
     final subText = isDark ? const Color(0xFF64748B) : const Color(0xFF475569);
     final border = isDark ? const Color(0xFF1E293B) : const Color(0xFFCBD5E1);
@@ -97,15 +98,38 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
   void initState() {
     super.initState();
     _allMembers = [
-      {'id': widget.currentUserId, 'name': 'You'},
+      {'id': widget.currentUserId, 'name': 'You', 'avatar_index': 0, 'is_superuser': false},
       ...widget.members
           .where((m) => m['status'] == 'accepted')
-          .map((m) => {'id': m['id'], 'name': m['name']}),
+          .map((m) => {
+        'id': m['id'],
+        'name': m['name'],
+        'avatar_index': m['avatar_index'] ?? 0,
+        'is_superuser': m['is_superuser'] ?? false
+      },
+      ),
     ];
 
     for (var member in _allMembers) {
       _customSplitControllers[member['id']] = TextEditingController();
     }
+
+    Future.wait([
+      AuthService.getAvatarIndex(),
+      AuthService.getIsSuperuser(),
+    ]).then((results) {
+      if (mounted) {
+        setState(() {
+          for (var member in _allMembers) {
+            if (member['id'] == widget.currentUserId) {
+              member['avatar_index'] = results[0];
+              member['is_superuser'] = results[1];
+              break;
+            }
+          }
+        });
+      }
+    });
   }
 
   @override
@@ -296,8 +320,8 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
               shape: BoxShape.circle,
               gradient: RadialGradient(
                 colors: [
-                  t.p1.withOpacity(t.isDark ? 0.15 : 0.20),
-                  t.p1.withOpacity(0),
+                  t.p1.withValues(alpha: t.isDark ? 0.15 : 0.20),
+                  t.p1.withValues(alpha: 0),
                 ],
               ),
             ),
@@ -315,8 +339,8 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
               shape: BoxShape.circle,
               gradient: RadialGradient(
                 colors: [
-                  t.p2.withOpacity(t.isDark ? 0.12 : 0.15),
-                  t.p2.withOpacity(0),
+                  t.p2.withValues(alpha: t.isDark ? 0.12 : 0.15),
+                  t.p2.withValues(alpha: 0),
                 ],
               ),
             ),
@@ -450,7 +474,7 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(24),
                       borderSide: BorderSide(
-                        color: t.border.withOpacity(t.isDark ? 0.5 : 0.8),
+                        color: t.border.withValues(alpha: t.isDark ? 0.5 : 0.8),
                         width: 1,
                       ),
                     ),
@@ -477,18 +501,18 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
                     hintText: 'e.g., Dinner at Mario\'s',
                     labelStyle: GoogleFonts.outfit(
                       fontSize: 12.5,
-                      color: t.subText.withOpacity(t.isDark ? 0.9 : 1.0),
+                      color: t.subText.withValues(alpha: t.isDark ? 0.9 : 1.0),
                       fontWeight: FontWeight.w600,
                       letterSpacing: 0.5,
                     ),
                     hintStyle: GoogleFonts.outfit(
                       fontSize: 14,
-                      color: t.subText.withOpacity(t.isDark ? 0.35 : 0.5),
+                      color: t.subText.withValues(alpha: t.isDark ? 0.35 : 0.5),
                       fontWeight: FontWeight.w400,
                     ),
                     prefixIcon: Icon(
                       Icons.receipt_long_rounded,
-                      color: t.subText.withOpacity(t.isDark ? 0.6 : 0.8),
+                      color: t.subText.withValues(alpha: t.isDark ? 0.6 : 0.8),
                       size: 20,
                     ),
                     floatingLabelBehavior: FloatingLabelBehavior.always,
@@ -501,7 +525,7 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
                       borderSide: BorderSide(
-                        color: t.border.withOpacity(t.isDark ? 0.5 : 0.8),
+                        color: t.border.withValues(alpha: t.isDark ? 0.5 : 0.8),
                         width: 1,
                       ),
                     ),
@@ -587,7 +611,7 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
                 BoxShadow(
                   color: const Color(
                     0xFF7C3AED,
-                  ).withOpacity(t.isDark ? 0.5 : 0.35),
+                  ).withValues(alpha: t.isDark ? 0.5 : 0.35),
                   blurRadius: 30,
                   offset: const Offset(0, 12),
                 ),
@@ -679,7 +703,7 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
                       BoxShadow(
                         color: const Color(
                           0xFF7C3AED,
-                        ).withOpacity(t.isDark ? 0.4 : 0.3),
+                        ).withValues(alpha: t.isDark ? 0.4 : 0.3),
                         blurRadius: 20,
                         offset: const Offset(0, 8),
                       ),
@@ -740,10 +764,10 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
                 ),
                 decoration: BoxDecoration(
                   color: isBalanced
-                      ? t.success.withOpacity(t.isDark ? 0.14 : 0.12)
+                      ? t.success.withValues(alpha: t.isDark ? 0.14 : 0.12)
                       : difference < 0
-                      ? t.danger.withOpacity(t.isDark ? 0.16 : 0.10)
-                      : t.warning.withOpacity(t.isDark ? 0.14 : 0.10),
+                      ? t.danger.withValues(alpha: t.isDark ? 0.16 : 0.10)
+                      : t.warning.withValues(alpha: t.isDark ? 0.14 : 0.10),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
@@ -777,7 +801,6 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
     final String name = member['name'];
     final bool isYou = name == 'You';
     final autoHint = _getAutoSplitHint(userId);
-    final firstLetter = name.isNotEmpty ? name[0].toUpperCase() : '?';
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -819,11 +842,11 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
                   color: t.subText,
                   fontWeight: FontWeight.w600,
                 ),
-                hintText: autoHint != null ? autoHint : '0.0',
+                hintText: autoHint ?? '0.0',
                 hintStyle: GoogleFonts.outfit(
                   color: autoHint != null
-                      ? t.p1.withOpacity(0.6)
-                      : t.subText.withOpacity(0.4),
+                      ? t.p1.withValues(alpha: 0.6)
+                      : t.subText.withValues(alpha: 0.4),
                 ),
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 14,
@@ -838,7 +861,7 @@ class _AddPaymentScreenState extends State<AddPaymentScreen> {
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide(
-                    color: t.border.withOpacity(t.isDark ? 0.5 : 0.8),
+                    color: t.border.withValues(alpha: t.isDark ? 0.5 : 0.8),
                     width: 1,
                   ),
                 ),

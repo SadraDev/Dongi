@@ -827,7 +827,6 @@ class _FriendsScreenState extends State<FriendsScreen>
   Widget _buildSearchResultCard(dynamic user, ThemeData theme) {
     final t = _tokens;
     final username = user['username'] as String;
-    final firstLetter = username.isNotEmpty ? username[0].toUpperCase() : '?';
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -936,7 +935,6 @@ class _FriendsScreenState extends State<FriendsScreen>
   Widget _buildFriendCard(dynamic friend, ThemeData theme) {
     final t = _tokens;
     final username = friend['username'] as String;
-    final firstLetter = username.isNotEmpty ? username[0].toUpperCase() : '?';
 
     // Calculate balance layout based on the backend data
     final double balance = (friend['balance'] ?? 0).toDouble();
@@ -1166,7 +1164,6 @@ class _FriendsScreenState extends State<FriendsScreen>
   void _showFriendOptions(dynamic friend, String username, ThemeData theme) {
     HapticFeedback.lightImpact();
     final t = _tokens;
-    final firstLetter = username.isNotEmpty ? username[0].toUpperCase() : '?';
 
     showModalBottomSheet(
       context: context,
